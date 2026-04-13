@@ -3,88 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lunar PRO - Gestão em Grupo</title>
+    <title>Lunar PRO - Gestão de Elite</title>
+    
+    <!-- Bibliotecas via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Firebase App (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap');
-        
-        :root {
-            --lunar-glow: #38bdf8;
-        }
-
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background: #020617; 
-            color: white; 
-            margin: 0;
-            user-select: none;
-            overflow-x: hidden;
-        }
-
-        /* Fundo Lunar Animado */
-        .stars-container {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1;
-            background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
-        }
-
-        .star {
-            position: absolute;
-            background: white;
-            border-radius: 50%;
-            opacity: 0.5;
-            animation: twinkle var(--duration) infinite ease-in-out;
-        }
-
-        @keyframes twinkle {
-            0%, 100% { opacity: 0.3; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.2); }
-        }
-
-        /* Bordas Animadas */
-        .animated-border {
-            position: relative;
-            background: rgba(15, 23, 42, 0.95);
-            border-radius: 1.5rem;
-            z-index: 1;
-        }
-
-        .animated-border::before {
-            content: "";
-            position: absolute;
-            top: -2px; left: -2px; right: -2px; bottom: -2px;
-            background: linear-gradient(45deg, transparent, var(--lunar-glow), transparent, #818cf8, transparent);
-            background-size: 400%;
-            z-index: -1;
-            border-radius: 1.6rem;
-            animation: borderRotate 6s linear infinite;
-            opacity: 0.8;
-        }
-
-        @keyframes borderRotate {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        .glass { 
-            background: rgba(30, 41, 59, 0.4); 
-            backdrop-filter: blur(16px); 
-            border: 1px solid rgba(255,255,255,0.08);
-        }
-
-        input, select {
-            -webkit-appearance: none;
-        }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        :root { --lunar-glow: #38bdf8; --lunar-deep: #020617; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--lunar-deep); color: white; margin: 0; overflow-x: hidden; min-height: 100vh; }
+        .stars-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: radial-gradient(circle at top right, #1e293b 0%, #020617 100%); }
+        .star { position: absolute; background: white; border-radius: 50%; opacity: 0.5; animation: twinkle var(--duration) infinite ease-in-out; }
+        @keyframes twinkle { 0%, 100% { opacity: 0.2; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.3); } }
+        .glass-card { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 24px; }
+        .lunar-input { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.3s ease; color: white; }
+        .lunar-input:focus { border-color: var(--lunar-glow); outline: none; box-shadow: 0 0 15px rgba(56, 189, 248, 0.2); }
+        .fade-in { animation: fadeInUp 0.6s ease-out forwards; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .progress-bar-inner { transition: width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .category-pill { transition: all 0.2s; cursor: pointer; }
+        .category-pill.active { background: #38bdf8; color: #020617; transform: scale(1.05); }
     </style>
 </head>
 <body>
@@ -92,218 +40,333 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
-
-        const CAT_ICONS = {
-            'Salário': 'banknote',
-            'Extra': 'plus-circle',
-            'Vendas': 'shopping-cart',
-            'Cartão': 'credit-card',
-            'Lanches': 'utensils',
-            'Pizza': 'pizza',
-            'Mercado': 'shopping-bag',
-            'Distrações': 'clapperboard',
-            'Outros': 'help-circle'
+        const firebaseConfig = {
+            apiKey: "AIzaSyA-u9ii8P_ril727CzvAtIVFKU76TrcHzg",
+            authDomain: "planilha-a251b.firebaseapp.com",
+            projectId: "planilha-a251b",
+            storageBucket: "planilha-a251b.firebasestorage.app",
+            messagingSenderId: "1003937015443",
+            appId: "1:1003937015443:web:cf65009507e29a32fa4f66"
         };
 
-        const Stars = () => {
-            useEffect(() => {
-                const container = document.getElementById('stars');
-                if (!container) return;
-                container.innerHTML = '';
-                for (let i = 0; i < 60; i++) {
-                    const star = document.createElement('div');
-                    star.className = 'star';
-                    const size = Math.random() * 2 + 1 + 'px';
-                    star.style.width = size;
-                    star.style.height = size;
-                    star.style.top = Math.random() * 100 + '%';
-                    star.style.left = Math.random() * 100 + '%';
-                    star.style.setProperty('--duration', (Math.random() * 3 + 2) + 's');
-                    container.appendChild(star);
-                }
-            }, []);
-            return null;
-        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const appId = "lunar-pro-v2";
+        const publicDoc = db.collection('artifacts').doc(appId).collection('public').doc('data');
+
+        const { useState, useEffect } = React;
+
+        const CATEGORIES = [
+            { id: 'casa', label: 'Casa', icon: 'fa-home' },
+            { id: 'comida', label: 'Comida', icon: 'fa-utensils' },
+            { id: 'lazer', label: 'Lazer', icon: 'fa-gamepad' },
+            { id: 'saude', label: 'Saúde', icon: 'fa-heartbeat' },
+            { id: 'outro', label: 'Outros', icon: 'fa-ellipsis-h' }
+        ];
 
         function App() {
-            const [transactions, setTransactions] = useState(() => {
-                try {
-                    const saved = localStorage.getItem('lunar_data_v2');
-                    return saved ? JSON.parse(saved) : [];
-                } catch (e) {
-                    return [];
-                }
+            const [user, setUser] = useState(null);
+            const [screen, setScreen] = useState('auth');
+            const [authMode, setAuthMode] = useState('login');
+            const [transactions, setTransactions] = useState([]);
+            const [allowedEmails, setAllowedEmails] = useState([]);
+            const [goal, setGoal] = useState({ title: 'Reserva de Emergência', target: 5000 });
+            const [loading, setLoading] = useState(true);
+            const [formData, setFormData] = useState({ 
+                email: '', password: '', amount: '', desc: '', type: 'saida', 
+                category: 'outro', newUserEmail: '', goalTitle: '', goalTarget: '' 
             });
-            
-            const [form, setForm] = useState({ 
-                user: '', 
-                amount: '', 
-                type: 'saida', 
-                category: 'Cartão' 
-            });
-
-            const categories = useMemo(() => {
-                return form.type === 'entrada' 
-                    ? ['Salário', 'Extra', 'Vendas', 'Outros'] 
-                    : ['Cartão', 'Lanches', 'Pizza', 'Mercado', 'Distrações', 'Outros'];
-            }, [form.type]);
 
             useEffect(() => {
-                localStorage.setItem('lunar_data_v2', JSON.stringify(transactions));
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
+                const container = document.getElementById('stars');
+                if (container && container.innerHTML === '') {
+                    for (let i = 0; i < 40; i++) {
+                        const star = document.createElement('div');
+                        star.className = 'star';
+                        star.style.width = Math.random() * 2 + 1 + 'px';
+                        star.style.height = star.style.width;
+                        star.style.top = Math.random() * 100 + '%';
+                        star.style.left = Math.random() * 100 + '%';
+                        star.style.setProperty('--duration', (Math.random() * 3 + 2) + 's');
+                        container.appendChild(star);
+                    }
                 }
-            }, [transactions]);
 
-            const addEntry = (e) => {
+                const unsubscribe = auth.onAuthStateChanged(async (u) => {
+                    if (u) {
+                        setUser(u);
+                        try {
+                            const accessRef = publicDoc.collection('settings').doc('access');
+                            const doc = await accessRef.get();
+                            let emails = doc.exists ? (doc.data().emails || []).map(e => e.toLowerCase()) : [];
+
+                            if (emails.length > 0 && !emails.includes(u.email.toLowerCase())) {
+                                alert("Acesso não autorizado.");
+                                await auth.signOut();
+                                setUser(null);
+                                setScreen('auth');
+                            } else {
+                                if (emails.length === 0) {
+                                    await accessRef.set({ emails: [u.email.toLowerCase()] }).catch(()=>{});
+                                    emails = [u.email.toLowerCase()];
+                                }
+                                setAllowedEmails(emails);
+                                setScreen('dashboard');
+                                startSync();
+                            }
+                        } catch (e) {
+                            setScreen('dashboard');
+                            startSync();
+                        }
+                    } else {
+                        setUser(null);
+                        setScreen('auth');
+                    }
+                    setLoading(false);
+                });
+                return () => unsubscribe();
+            }, []);
+
+            const startSync = () => {
+                publicDoc.collection('transactions').orderBy('timestamp', 'desc').limit(100).onSnapshot(snap => {
+                    setTransactions(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                });
+                publicDoc.collection('settings').doc('access').onSnapshot(doc => {
+                    if (doc.exists) setAllowedEmails(doc.data().emails || []);
+                });
+                publicDoc.collection('settings').doc('goal').onSnapshot(doc => {
+                    if (doc.exists) setGoal(doc.data());
+                });
+            };
+
+            const handleAuth = async (e) => {
                 e.preventDefault();
-                const numAmount = parseFloat(form.amount);
-                if(!form.user || isNaN(numAmount) || numAmount <= 0) return;
-                
-                const novo = {
-                    id: Date.now(),
-                    user: form.user,
-                    val: numAmount,
-                    type: form.type,
-                    cat: form.category,
-                    time: new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}),
-                    date: new Date().toLocaleDateString('pt-BR')
-                };
-                setTransactions([novo, ...transactions]);
-                setForm({ ...form, amount: '' });
+                setLoading(true);
+                const emailClean = formData.email.trim().toLowerCase();
+                try {
+                    if (authMode === 'register') {
+                        await auth.createUserWithEmailAndPassword(emailClean, formData.password);
+                    } else if (authMode === 'login') {
+                        await auth.signInWithEmailAndPassword(emailClean, formData.password);
+                    } else {
+                        await auth.sendPasswordResetEmail(emailClean);
+                        alert("E-mail de recuperação enviado!");
+                        setAuthMode('login');
+                    }
+                } catch (err) { alert("Erro: " + err.message); }
+                finally { setLoading(false); }
             };
 
-            const deleteEntry = (id) => {
-                // Modal de confirmação nativo para facilitar no mobile
-                if(window.confirm("Apagar este registro permanentemente?")) {
-                    setTransactions(prev => prev.filter(t => t.id !== id));
-                }
+            const addTransaction = async (e) => {
+                e.preventDefault();
+                if (!formData.desc || !formData.amount) return;
+                try {
+                    await publicDoc.collection('transactions').add({
+                        desc: formData.desc,
+                        amount: parseFloat(formData.amount),
+                        type: formData.type,
+                        category: formData.category,
+                        author: user.email,
+                        timestamp: Date.now(),
+                        date: new Date().toLocaleDateString('pt-BR')
+                    });
+                    setFormData({ ...formData, amount: '', desc: '', category: 'outro' });
+                } catch (e) { alert("Erro ao salvar."); }
             };
 
-            const saldo = useMemo(() => {
-                return transactions.reduce((acc, t) => t.type === 'entrada' ? acc + t.val : acc - t.val, 0);
-            }, [transactions]);
+            const deleteTransaction = async (id) => {
+                if (!confirm("Deseja apagar este registo?")) return;
+                try {
+                    await publicDoc.collection('transactions').doc(id).delete();
+                } catch (e) { alert("Erro ao apagar."); }
+            };
+
+            const updateGoal = async (e) => {
+                e.preventDefault();
+                if (!formData.goalTitle || !formData.goalTarget) return;
+                try {
+                    await publicDoc.collection('settings').doc('goal').set({
+                        title: formData.goalTitle,
+                        target: parseFloat(formData.goalTarget)
+                    });
+                    alert("Objetivo atualizado!");
+                    setScreen('dashboard');
+                } catch (err) { alert("Erro ao salvar meta."); }
+            };
+
+            const addAllowedUser = async (e) => {
+                e.preventDefault();
+                const emailToAdd = formData.newUserEmail.trim().toLowerCase();
+                if (!emailToAdd) return;
+                const newEmails = Array.from(new Set([...allowedEmails, emailToAdd]));
+                try {
+                    await publicDoc.collection('settings').doc('access').set({ emails: newEmails });
+                    setFormData({ ...formData, newUserEmail: '' });
+                    alert("Utilizador autorizado!");
+                } catch (err) { alert("Erro ao atualizar."); }
+            };
+
+            const saldo = transactions.reduce((acc, t) => t.type === 'entrada' ? acc + t.amount : acc - t.amount, 0);
+            const totalSaidas = transactions.filter(t => t.type === 'saida').reduce((acc, t) => acc + t.amount, 0);
+            const progressoMeta = Math.min(Math.max((saldo / goal.target) * 100, 0), 100);
+
+            if (loading) return (
+                <div className="h-screen flex flex-col items-center justify-center">
+                    <div className="w-12 h-12 border-4 border-sky-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p className="text-sky-400 font-bold text-[10px] tracking-widest uppercase">A sintonizar frequências...</p>
+                </div>
+            );
+
+            if (screen === 'auth') return (
+                <div className="min-h-screen flex items-center justify-center p-6 fade-in">
+                    <div className="glass-card w-full max-w-sm p-8 shadow-2xl border-white/5">
+                        <div className="text-center mb-10">
+                            <h1 className="text-4xl font-black text-white italic tracking-tighter">LUNAR <span className="text-sky-400 text-glow">PRO</span></h1>
+                            <p className="text-slate-500 text-[10px] mt-1 uppercase tracking-widest font-extrabold">Finanças Familiares de Elite</p>
+                        </div>
+                        <form onSubmit={handleAuth} className="space-y-4">
+                            <input type="email" required placeholder="Teu E-mail" className="w-full lunar-input rounded-2xl p-4 text-sm font-medium" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                            {authMode !== 'reset' && <input type="password" required placeholder="Tua Senha" className="w-full lunar-input rounded-2xl p-4 text-sm font-medium" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} />}
+                            <button type="submit" className="w-full bg-sky-500 hover:bg-sky-400 text-white font-black py-4 rounded-2xl uppercase tracking-widest text-[11px] transition-all active:scale-95 shadow-lg shadow-sky-500/20">
+                                {authMode === 'login' ? 'Entrar no Sistema' : authMode === 'register' ? 'Criar Nova Conta' : 'Recuperar'}
+                            </button>
+                        </form>
+                        <p className="mt-8 text-center text-[10px] text-slate-500 font-bold cursor-pointer hover:text-sky-400" onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}>
+                            {authMode === 'login' ? 'PRECISA DE UMA CONTA? REGISTRE-SE' : 'JÁ TEM ACESSO? FAÇA LOGIN'}
+                        </p>
+                    </div>
+                </div>
+            );
 
             return (
-                <div className="min-h-screen flex flex-col max-w-md mx-auto px-5 py-8">
-                    <Stars />
-                    
-                    <header className="mb-8 text-center">
-                        <h1 className="text-3xl font-black tracking-tighter text-white">LUNAR PRO</h1>
-                        <div className="text-[10px] text-sky-400 font-bold tracking-[0.4em] uppercase mt-1">Gestão em Grupo</div>
+                <div className="min-h-screen max-w-lg mx-auto pb-28 px-6 pt-8 fade-in">
+                    <header className="flex justify-between items-center mb-8">
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 bg-sky-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-sky-500/20">
+                                <i className="fas fa-moon text-lg"></i>
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-black italic">Lunar PRO</h2>
+                                <p className="text-slate-500 text-[9px] uppercase font-bold tracking-widest">{user.email.split('@')[0]}</p>
+                            </div>
+                        </div>
+                        <button onClick={() => setScreen(screen === 'dashboard' ? 'profile' : 'dashboard')} className="h-12 w-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 hover:bg-white/10 transition-all">
+                            <i className={`fas fa-${screen === 'dashboard' ? 'cog' : 'home'} text-sky-400`}></i>
+                        </button>
                     </header>
 
-                    <div className="mb-8">
-                        <div className="animated-border p-6 shadow-2xl">
-                            <div className="flex justify-between items-center text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">
-                                Saldo Disponível
-                                <i data-lucide="users" className="w-4 h-4 text-sky-400"></i>
-                            </div>
-                            <div className="text-3xl font-bold tracking-tight text-white break-all">
-                                R$ {saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Formulário */}
-                    <div className="glass p-5 rounded-[2rem] mb-6 shadow-2xl border border-white/10">
-                        <form onSubmit={addEntry} className="space-y-4">
-                            <div className="flex bg-slate-900/80 rounded-2xl p-1.5 border border-white/5">
-                                <button 
-                                    type="button"
-                                    onClick={() => setForm({...form, type: 'entrada', category: 'Salário'})}
-                                    className={`flex-1 py-3 text-[10px] font-black rounded-xl transition-all ${form.type === 'entrada' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-500'}`}
-                                >ENTRADA</button>
-                                <button 
-                                    type="button"
-                                    onClick={() => setForm({...form, type: 'saida', category: 'Cartão'})}
-                                    className={`flex-1 py-3 text-[10px] font-black rounded-xl transition-all ${form.type === 'saida' ? 'bg-red-500 text-white shadow-lg' : 'text-slate-500'}`}
-                                >SAÍDA</button>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                    <label className="text-[9px] font-bold text-slate-500 uppercase ml-2 tracking-widest">Pessoa</label>
-                                    <input 
-                                        type="text" 
-                                        placeholder="Nome" 
-                                        className="w-full bg-slate-900/60 border border-white/5 p-3 rounded-xl text-sm outline-none focus:border-sky-500/50 text-white placeholder:text-slate-700"
-                                        value={form.user}
-                                        onChange={(e) => setForm({...form, user: e.target.value})}
-                                    />
+                    {screen === 'dashboard' && (
+                        <div className="space-y-6">
+                            {/* Cards de Resumo */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="glass-card p-6 border-sky-500/20 bg-gradient-to-br from-slate-800/40 to-slate-900/60 shadow-xl">
+                                    <span className="text-[9px] font-bold text-sky-400 uppercase tracking-widest">Saldo Atual</span>
+                                    <div className="text-xl font-black mt-1">R$ {saldo.toLocaleString('pt-BR')}</div>
                                 </div>
-                                <div className="space-y-1">
-                                    <label className="text-[9px] font-bold text-slate-500 uppercase ml-2 tracking-widest">Tipo</label>
-                                    <select 
-                                        className="w-full bg-slate-900/60 border border-white/5 p-3 rounded-xl text-sm outline-none focus:border-sky-500/50 text-white"
-                                        value={form.category}
-                                        onChange={(e) => setForm({...form, category: e.target.value})}
-                                    >
-                                        {categories.map(c => <option key={c} value={c} className="bg-slate-950">{c}</option>)}
-                                    </select>
+                                <div className="glass-card p-6 border-red-500/10">
+                                    <span className="text-[9px] font-bold text-red-400 uppercase tracking-widest">Saídas Totais</span>
+                                    <div className="text-xl font-black mt-1">R$ {totalSaidas.toLocaleString('pt-BR')}</div>
                                 </div>
                             </div>
-                            
-                            <div className="flex gap-3">
-                                <div className="flex-1 space-y-1">
-                                    <label className="text-[9px] font-bold text-slate-500 uppercase ml-2 tracking-widest">Quanto (R$)</label>
-                                    <input 
-                                        type="number" 
-                                        step="any"
-                                        placeholder="0,00" 
-                                        className="w-full bg-slate-900/60 border border-white/5 p-3 rounded-xl text-sm outline-none focus:border-sky-500/50 text-white placeholder:text-slate-700"
-                                        value={form.amount}
-                                        onChange={(e) => setForm({...form, amount: e.target.value})}
-                                    />
-                                </div>
-                                <button className="self-end bg-white text-black h-[46px] w-[46px] rounded-xl flex items-center justify-center shadow-xl active:scale-90 transition-all">
-                                    <i data-lucide="plus" className="w-5 h-5"></i>
-                                </button>
-                            </div>
-                        </form>
-                    </div>
 
-                    {/* Histórico */}
-                    <div className="flex-1 flex flex-col min-h-0">
-                        <div className="flex justify-between items-center mb-4 px-2">
-                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Fluxo de Caixa</h3>
-                            <span className="text-[9px] text-slate-600 uppercase font-bold tracking-tighter">Dois cliques p/ apagar</span>
-                        </div>
-                        
-                        <div className="space-y-2 overflow-y-auto flex-1 pb-10">
-                            {transactions.length === 0 ? (
-                                <div className="text-center py-10 text-slate-800 text-[10px] font-bold uppercase tracking-widest">Nenhum registro no momento</div>
-                            ) : (
-                                transactions.map(t => (
-                                    <div 
-                                        key={t.id} 
-                                        onDoubleClick={() => deleteEntry(t.id)}
-                                        className="flex justify-between items-center p-4 glass rounded-2xl border border-white/5 active:scale-[0.98] transition-transform"
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className={`p-2.5 rounded-xl ${t.type === 'entrada' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-400'}`}>
-                                                <i data-lucide={CAT_ICONS[t.cat] || 'help-circle'} className="w-5 h-5"></i>
+                            {/* Card de Meta */}
+                            <div className="glass-card p-6 border-white/5 bg-black/20">
+                                <div className="flex justify-between items-end mb-3">
+                                    <div>
+                                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Meta: {goal.title}</span>
+                                        <h4 className="text-xs font-bold text-white">R$ {saldo.toLocaleString('pt-BR')} / R$ {goal.target.toLocaleString('pt-BR')}</h4>
+                                    </div>
+                                    <div className="text-[10px] font-black text-sky-400">{progressoMeta.toFixed(0)}%</div>
+                                </div>
+                                <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden">
+                                    <div className="h-full bg-sky-500 progress-bar-inner shadow-[0_0_10px_rgba(56,189,248,0.4)]" style={{ width: `${progressoMeta}%` }}></div>
+                                </div>
+                            </div>
+
+                            {/* Novo Lançamento */}
+                            <div className="glass-card p-6 border-white/5">
+                                <form onSubmit={addTransaction} className="space-y-4">
+                                    <div className="flex bg-black/40 p-1.5 rounded-2xl">
+                                        <button type="button" onClick={() => setFormData({...formData, type: 'entrada'})} className={`flex-1 py-3 text-[9px] font-black rounded-xl transition-all ${formData.type === 'entrada' ? 'bg-emerald-500 text-white' : 'text-slate-500'}`}>ENTRADA</button>
+                                        <button type="button" onClick={() => setFormData({...formData, type: 'saida'})} className={`flex-1 py-3 text-[9px] font-black rounded-xl transition-all ${formData.type === 'saida' ? 'bg-red-500 text-white' : 'text-slate-500'}`}>SAÍDA</button>
+                                    </div>
+                                    
+                                    {/* Seletor de Categoria */}
+                                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                                        {CATEGORIES.map(cat => (
+                                            <div key={cat.id} onClick={() => setFormData({...formData, category: cat.id})} className={`category-pill px-4 py-2 rounded-xl border border-white/5 flex items-center gap-2 whitespace-nowrap text-[10px] font-bold ${formData.category === cat.id ? 'active' : 'bg-white/5 text-slate-400'}`}>
+                                                <i className={`fas ${cat.icon}`}></i> {cat.label}
                                             </div>
-                                            <div className="min-w-0">
-                                                <div className="text-sm font-bold text-slate-200 truncate">{t.user}</div>
-                                                <div className="text-[10px] text-slate-500 font-medium">{t.cat} • {t.time}</div>
+                                        ))}
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <input type="text" placeholder="O que comprou?" required className="lunar-input rounded-xl p-4 text-xs font-medium" value={formData.desc} onChange={(e) => setFormData({...formData, desc: e.target.value})} />
+                                        <input type="number" step="any" placeholder="Valor" required className="lunar-input rounded-xl p-4 text-xs font-medium" value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} />
+                                    </div>
+                                    <button className="w-full bg-white text-black font-black py-4 rounded-xl text-[10px] tracking-widest hover:bg-sky-400 hover:text-white transition-all uppercase shadow-xl">Registrar Lançamento</button>
+                                </form>
+                            </div>
+
+                            {/* Lista de Transações */}
+                            <div className="space-y-3">
+                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Últimas Atividades</h3>
+                                {transactions.map(t => (
+                                    <div key={t.id} className="glass-card p-4 flex justify-between items-center border-white/5 hover:border-white/10 transition-all group relative overflow-hidden">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-xs ${t.type === 'entrada' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                                                <i className={`fas ${CATEGORIES.find(c => c.id === t.category)?.icon || 'fa-shopping-cart'}`}></i>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold">{t.desc}</p>
+                                                <p className="text-[9px] text-slate-500 font-medium">{t.date} • {t.author?.split('@')[0]}</p>
                                             </div>
                                         </div>
-                                        <div className={`text-sm font-black whitespace-nowrap ${t.type === 'entrada' ? 'text-emerald-400' : 'text-red-400'}`}>
-                                            {t.type === 'entrada' ? '+' : '-'} {t.val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        <div className="flex items-center gap-4">
+                                            <div className={`text-sm font-black ${t.type === 'entrada' ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                R$ {t.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                            </div>
+                                            <button onClick={() => deleteTransaction(t.id)} className="text-slate-700 hover:text-red-500 transition-colors text-xs opacity-0 group-hover:opacity-100"><i className="fas fa-trash"></i></button>
                                         </div>
                                     </div>
-                                ))
-                            )}
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
-                    <footer className="py-6 text-center border-t border-white/5 bg-slate-950/50 -mx-5 px-5">
-                        <p className="text-[9px] text-slate-600 font-bold tracking-[0.4em] uppercase">
-                            Digital Wallet <span className="text-sky-500/50">By</span> <span className="text-slate-400 font-bold">Gabriel Rodrigues</span>
-                        </p>
-                    </footer>
+                    {screen === 'profile' && (
+                        <div className="space-y-6 fade-in">
+                            {/* Meta */}
+                            <div className="glass-card p-6 border-white/5">
+                                <h3 className="text-[10px] font-black mb-6 flex items-center gap-2 text-sky-400 uppercase tracking-widest"><i className="fas fa-bullseye"></i> Ajustar Objetivo Orbital</h3>
+                                <form onSubmit={updateGoal} className="space-y-4">
+                                    <input type="text" placeholder="Nome da Meta" className="w-full lunar-input rounded-xl p-4 text-xs font-medium" value={formData.goalTitle} onChange={(e) => setFormData({...formData, goalTitle: e.target.value})} />
+                                    <input type="number" placeholder="Valor Alvo" className="w-full lunar-input rounded-xl p-4 text-xs font-medium" value={formData.goalTarget} onChange={(e) => setFormData({...formData, goalTarget: e.target.value})} />
+                                    <button type="submit" className="w-full bg-sky-500 text-white font-black py-4 rounded-xl text-[10px] uppercase shadow-lg shadow-sky-500/10">Salvar Nova Meta</button>
+                                </form>
+                            </div>
+
+                            {/* Acessos */}
+                            <div className="glass-card p-6 border-white/5">
+                                <h3 className="text-[10px] font-black mb-4 text-sky-400 uppercase tracking-widest"><i className="fas fa-user-plus"></i> Convidar Membro</h3>
+                                <div className="space-y-2 mb-6">
+                                    {allowedEmails.map(email => (
+                                        <div key={email} className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5 text-[11px]">
+                                            <span>{email}</span>
+                                            <i className="fas fa-check-circle text-sky-500"></i>
+                                        </div>
+                                    ))}
+                                </div>
+                                <form onSubmit={addAllowedUser} className="flex gap-2">
+                                    <input type="email" placeholder="E-mail" className="flex-1 lunar-input rounded-xl p-3 text-xs" value={formData.newUserEmail} onChange={(e) => setFormData({...formData, newUserEmail: e.target.value})} />
+                                    <button type="submit" className="bg-white text-black px-4 rounded-xl font-bold text-[10px]">ADD</button>
+                                </form>
+                            </div>
+
+                            <button onClick={() => auth.signOut()} className="w-full glass-card p-5 text-red-400 font-black text-[10px] uppercase tracking-widest border-red-500/20 active:scale-95 transition-all">Sair do Sistema</button>
+                        </div>
+                    )}
                 </div>
             );
         }
