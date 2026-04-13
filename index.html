@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lunar PRO - Gabriel Rodrigues</title>
+    <title>Lunar PRO - Gestão em Grupo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -13,7 +13,6 @@
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap');
         
         :root {
-            --lunar-blue: #1e293b;
             --lunar-glow: #38bdf8;
         }
 
@@ -21,8 +20,9 @@
             font-family: 'Plus Jakarta Sans', sans-serif; 
             background: #020617; 
             color: white; 
-            overflow-x: hidden;
             margin: 0;
+            user-select: none;
+            overflow-x: hidden;
         }
 
         /* Fundo Lunar Animado */
@@ -31,7 +31,6 @@
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1;
             background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
-            overflow: hidden;
         }
 
         .star {
@@ -50,8 +49,8 @@
         /* Bordas Animadas */
         .animated-border {
             position: relative;
-            background: rgba(15, 23, 42, 0.8);
-            border-radius: 1rem;
+            background: rgba(15, 23, 42, 0.95);
+            border-radius: 1.5rem;
             z-index: 1;
         }
 
@@ -62,9 +61,9 @@
             background: linear-gradient(45deg, transparent, var(--lunar-glow), transparent, #818cf8, transparent);
             background-size: 400%;
             z-index: -1;
-            border-radius: 1.1rem;
+            border-radius: 1.6rem;
             animation: borderRotate 6s linear infinite;
-            opacity: 0.6;
+            opacity: 0.8;
         }
 
         @keyframes borderRotate {
@@ -75,13 +74,16 @@
 
         .glass { 
             background: rgba(30, 41, 59, 0.4); 
-            backdrop-filter: blur(12px); 
-            border: 1px solid rgba(255,255,255,0.05);
+            backdrop-filter: blur(16px); 
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        input, select {
+            -webkit-appearance: none;
         }
 
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
 </head>
@@ -92,11 +94,24 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
-        // Gerador de Estrelas
+        const CAT_ICONS = {
+            'Salário': 'banknote',
+            'Extra': 'plus-circle',
+            'Vendas': 'shopping-cart',
+            'Cartão': 'credit-card',
+            'Lanches': 'utensils',
+            'Pizza': 'pizza',
+            'Mercado': 'shopping-bag',
+            'Distrações': 'clapperboard',
+            'Outros': 'help-circle'
+        };
+
         const Stars = () => {
             useEffect(() => {
                 const container = document.getElementById('stars');
-                for (let i = 0; i < 100; i++) {
+                if (!container) return;
+                container.innerHTML = '';
+                for (let i = 0; i < 60; i++) {
                     const star = document.createElement('div');
                     star.className = 'star';
                     const size = Math.random() * 2 + 1 + 'px';
@@ -111,39 +126,59 @@
             return null;
         };
 
-        const StatCard = ({ label, val, color, icon: Icon }) => (
-            <div className={`animated-border p-4 flex flex-col gap-1`}>
-                <div className="flex justify-between items-center text-slate-400 text-xs font-bold uppercase tracking-widest">
-                    {label}
-                    <i data-lucide={Icon} className="w-4 h-4 text-sky-400"></i>
-                </div>
-                <div className="text-xl font-bold tracking-tight">
-                    R$ {val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </div>
-            </div>
-        );
-
         function App() {
-            const [transactions, setTransactions] = useState([]);
-            const [form, setForm] = useState({ name: '', amount: '', type: 'saida' });
+            const [transactions, setTransactions] = useState(() => {
+                try {
+                    const saved = localStorage.getItem('lunar_data_v2');
+                    return saved ? JSON.parse(saved) : [];
+                } catch (e) {
+                    return [];
+                }
+            });
+            
+            const [form, setForm] = useState({ 
+                user: '', 
+                amount: '', 
+                type: 'saida', 
+                category: 'Cartão' 
+            });
+
+            const categories = useMemo(() => {
+                return form.type === 'entrada' 
+                    ? ['Salário', 'Extra', 'Vendas', 'Outros'] 
+                    : ['Cartão', 'Lanches', 'Pizza', 'Mercado', 'Distrações', 'Outros'];
+            }, [form.type]);
 
             useEffect(() => {
-                if (typeof lucide !== 'undefined') lucide.createIcons();
+                localStorage.setItem('lunar_data_v2', JSON.stringify(transactions));
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
             }, [transactions]);
 
             const addEntry = (e) => {
                 e.preventDefault();
-                if(!form.name || !form.amount) return;
+                const numAmount = parseFloat(form.amount);
+                if(!form.user || isNaN(numAmount) || numAmount <= 0) return;
                 
                 const novo = {
                     id: Date.now(),
-                    name: form.name,
-                    val: parseFloat(form.amount),
+                    user: form.user,
+                    val: numAmount,
                     type: form.type,
-                    time: new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})
+                    cat: form.category,
+                    time: new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}),
+                    date: new Date().toLocaleDateString('pt-BR')
                 };
                 setTransactions([novo, ...transactions]);
-                setForm({ ...form, name: '', amount: '' });
+                setForm({ ...form, amount: '' });
+            };
+
+            const deleteEntry = (id) => {
+                // Modal de confirmação nativo para facilitar no mobile
+                if(window.confirm("Apagar este registro permanentemente?")) {
+                    setTransactions(prev => prev.filter(t => t.id !== id));
+                }
             };
 
             const saldo = useMemo(() => {
@@ -151,89 +186,122 @@
             }, [transactions]);
 
             return (
-                <div className="min-h-screen flex flex-col max-w-md mx-auto px-4 py-6">
+                <div className="min-h-screen flex flex-col max-w-md mx-auto px-5 py-8">
                     <Stars />
                     
-                    {/* Header Minimalista */}
                     <header className="mb-8 text-center">
-                        <h1 className="text-2xl font-extrabold tracking-tighter bg-gradient-to-b from-white to-slate-500 bg-clip-text text-transparent">
-                            LUNAR PLANILHA
-                        </h1>
-                        <div className="text-[10px] text-sky-400 font-bold tracking-[0.2em] uppercase">Sistema Automático</div>
+                        <h1 className="text-3xl font-black tracking-tighter text-white">LUNAR PRO</h1>
+                        <div className="text-[10px] text-sky-400 font-bold tracking-[0.4em] uppercase mt-1">Gestão em Grupo</div>
                     </header>
 
-                    {/* Cards de Status */}
-                    <div className="grid grid-cols-2 gap-3 mb-6">
-                        <div className="col-span-2">
-                             <StatCard label="Saldo Disponível" val={saldo} icon="wallet" />
+                    <div className="mb-8">
+                        <div className="animated-border p-6 shadow-2xl">
+                            <div className="flex justify-between items-center text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">
+                                Saldo Disponível
+                                <i data-lucide="users" className="w-4 h-4 text-sky-400"></i>
+                            </div>
+                            <div className="text-3xl font-bold tracking-tight text-white break-all">
+                                R$ {saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </div>
                         </div>
                     </div>
 
-                    {/* Input Rápido (Estilo Planilha) */}
-                    <div className="glass p-4 rounded-2xl mb-6 shadow-xl border border-white/10">
-                        <form onSubmit={addEntry} className="space-y-3">
-                            <div className="flex bg-slate-900/50 rounded-lg p-1">
+                    {/* Formulário */}
+                    <div className="glass p-5 rounded-[2rem] mb-6 shadow-2xl border border-white/10">
+                        <form onSubmit={addEntry} className="space-y-4">
+                            <div className="flex bg-slate-900/80 rounded-2xl p-1.5 border border-white/5">
                                 <button 
                                     type="button"
-                                    onClick={() => setForm({...form, type: 'entrada'})}
-                                    className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${form.type === 'entrada' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-500'}`}
-                                >GANHO</button>
+                                    onClick={() => setForm({...form, type: 'entrada', category: 'Salário'})}
+                                    className={`flex-1 py-3 text-[10px] font-black rounded-xl transition-all ${form.type === 'entrada' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-500'}`}
+                                >ENTRADA</button>
                                 <button 
                                     type="button"
-                                    onClick={() => setForm({...form, type: 'saida'})}
-                                    className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${form.type === 'saida' ? 'bg-red-500 text-white shadow-lg' : 'text-slate-500'}`}
-                                >GASTO</button>
+                                    onClick={() => setForm({...form, type: 'saida', category: 'Cartão'})}
+                                    className={`flex-1 py-3 text-[10px] font-black rounded-xl transition-all ${form.type === 'saida' ? 'bg-red-500 text-white shadow-lg' : 'text-slate-500'}`}
+                                >SAÍDA</button>
                             </div>
-                            <input 
-                                type="text" 
-                                placeholder="O que foi?" 
-                                className="w-full bg-slate-800/50 border border-slate-700/50 p-3 rounded-xl text-sm outline-none focus:border-sky-500 transition-all"
-                                value={form.name}
-                                onChange={(e) => setForm({...form, name: e.target.value})}
-                            />
-                            <div className="flex gap-2">
-                                <input 
-                                    type="number" 
-                                    placeholder="Valor R$" 
-                                    className="flex-1 bg-slate-800/50 border border-slate-700/50 p-3 rounded-xl text-sm outline-none focus:border-sky-500 transition-all"
-                                    value={form.amount}
-                                    onChange={(e) => setForm({...form, amount: e.target.value})}
-                                />
-                                <button className="bg-sky-500 hover:bg-sky-400 p-3 rounded-xl text-white shadow-lg shadow-sky-500/20 transition-all active:scale-95">
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-bold text-slate-500 uppercase ml-2 tracking-widest">Pessoa</label>
+                                    <input 
+                                        type="text" 
+                                        placeholder="Nome" 
+                                        className="w-full bg-slate-900/60 border border-white/5 p-3 rounded-xl text-sm outline-none focus:border-sky-500/50 text-white placeholder:text-slate-700"
+                                        value={form.user}
+                                        onChange={(e) => setForm({...form, user: e.target.value})}
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-bold text-slate-500 uppercase ml-2 tracking-widest">Tipo</label>
+                                    <select 
+                                        className="w-full bg-slate-900/60 border border-white/5 p-3 rounded-xl text-sm outline-none focus:border-sky-500/50 text-white"
+                                        value={form.category}
+                                        onChange={(e) => setForm({...form, category: e.target.value})}
+                                    >
+                                        {categories.map(c => <option key={c} value={c} className="bg-slate-950">{c}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div className="flex gap-3">
+                                <div className="flex-1 space-y-1">
+                                    <label className="text-[9px] font-bold text-slate-500 uppercase ml-2 tracking-widest">Quanto (R$)</label>
+                                    <input 
+                                        type="number" 
+                                        step="any"
+                                        placeholder="0,00" 
+                                        className="w-full bg-slate-900/60 border border-white/5 p-3 rounded-xl text-sm outline-none focus:border-sky-500/50 text-white placeholder:text-slate-700"
+                                        value={form.amount}
+                                        onChange={(e) => setForm({...form, amount: e.target.value})}
+                                    />
+                                </div>
+                                <button className="self-end bg-white text-black h-[46px] w-[46px] rounded-xl flex items-center justify-center shadow-xl active:scale-90 transition-all">
                                     <i data-lucide="plus" className="w-5 h-5"></i>
                                 </button>
                             </div>
                         </form>
                     </div>
 
-                    {/* Lista Planilha Automática */}
-                    <div className="flex-1">
-                        <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 ml-1">Histórico de Hoje</h3>
-                        <div className="space-y-2 overflow-y-auto max-h-[45vh] pr-1">
-                            {transactions.length === 0 && (
-                                <div className="text-center py-10 text-slate-600 text-xs italic">Aguardando lançamentos...</div>
-                            )}
-                            {transactions.map(t => (
-                                <div key={t.id} className="flex justify-between items-center p-3 glass rounded-xl border-l-2 border-white/5">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-1 h-8 rounded-full ${t.type === 'entrada' ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
-                                        <div>
-                                            <div className="text-sm font-semibold text-slate-200">{t.name}</div>
-                                            <div className="text-[10px] text-slate-500">{t.time}</div>
+                    {/* Histórico */}
+                    <div className="flex-1 flex flex-col min-h-0">
+                        <div className="flex justify-between items-center mb-4 px-2">
+                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Fluxo de Caixa</h3>
+                            <span className="text-[9px] text-slate-600 uppercase font-bold tracking-tighter">Dois cliques p/ apagar</span>
+                        </div>
+                        
+                        <div className="space-y-2 overflow-y-auto flex-1 pb-10">
+                            {transactions.length === 0 ? (
+                                <div className="text-center py-10 text-slate-800 text-[10px] font-bold uppercase tracking-widest">Nenhum registro no momento</div>
+                            ) : (
+                                transactions.map(t => (
+                                    <div 
+                                        key={t.id} 
+                                        onDoubleClick={() => deleteEntry(t.id)}
+                                        className="flex justify-between items-center p-4 glass rounded-2xl border border-white/5 active:scale-[0.98] transition-transform"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className={`p-2.5 rounded-xl ${t.type === 'entrada' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-400'}`}>
+                                                <i data-lucide={CAT_ICONS[t.cat] || 'help-circle'} className="w-5 h-5"></i>
+                                            </div>
+                                            <div className="min-w-0">
+                                                <div className="text-sm font-bold text-slate-200 truncate">{t.user}</div>
+                                                <div className="text-[10px] text-slate-500 font-medium">{t.cat} • {t.time}</div>
+                                            </div>
+                                        </div>
+                                        <div className={`text-sm font-black whitespace-nowrap ${t.type === 'entrada' ? 'text-emerald-400' : 'text-red-400'}`}>
+                                            {t.type === 'entrada' ? '+' : '-'} {t.val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                         </div>
                                     </div>
-                                    <div className={`text-sm font-bold ${t.type === 'entrada' ? 'text-emerald-400' : 'text-red-400'}`}>
-                                        {t.type === 'entrada' ? '+' : '-'} {t.val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                    </div>
-                                </div>
-                            ))}
+                                ))
+                            )}
                         </div>
                     </div>
 
-                    {/* Rodapé com Crédito */}
-                    <footer className="mt-auto pt-6 text-center">
-                        <p className="text-[9px] text-slate-600 font-medium tracking-[0.3em] uppercase">
-                            Desenvolvido por <span className="text-slate-400">Gabriel Rodrigues</span>
+                    <footer className="py-6 text-center border-t border-white/5 bg-slate-950/50 -mx-5 px-5">
+                        <p className="text-[9px] text-slate-600 font-bold tracking-[0.4em] uppercase">
+                            Digital Wallet <span className="text-sky-500/50">By</span> <span className="text-slate-400 font-bold">Gabriel Rodrigues</span>
                         </p>
                     </footer>
                 </div>
