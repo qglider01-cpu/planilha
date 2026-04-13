@@ -1,338 +1,325 @@
-```react
 import React, { useState, useEffect, useMemo } from 'react';
 import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  onAuthStateChanged, 
-  signOut,
-  signInWithCustomToken,
-  signInAnonymously
-} from 'firebase/auth';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { 
   getFirestore, 
   collection, 
-  doc, 
   addDoc, 
-  onSnapshot, 
-  query, 
-  orderBy, 
   deleteDoc, 
-  setDoc,
-  getDoc
+  doc, 
+  onSnapshot, 
+  Timestamp 
 } from 'firebase/firestore';
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  AreaChart,
+  Area
+} from 'recharts';
+import { 
+  TrendingUp, 
+  Target, 
+  ArrowUpCircle, 
+  ArrowDownCircle, 
+  Trash2, 
+  Wallet,
+  AlertTriangle,
+  CheckCircle2,
+  Calendar
+} from 'lucide-react';
 
-// --- CONFIGURAÇÃO E INICIALIZAÇÃO ---
-const firebaseConfig = JSON.parse(__firebase_config);
+// --- CONFIGURAÇÃO FIREBASE ---
+const firebaseConfig = {
+  apiKey: "AIzaSyA-u9ii8P_ril727CzvAtIVFKU76TrcHzg",
+  authDomain: "planilha-a251b.firebaseapp.com",
+  projectId: "planilha-a251b",
+  storageBucket: "planilha-a251b.firebasestorage.app",
+  messagingSenderId: "1003937015443",
+  appId: "1:1003937015443:web:cf65009507e29a32fa4f66",
+  measurementId: "G-R8QPBLBNHC"
+};
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'lunar-pro-enterprise';
-
-// --- ÍCONES VIA SVG (Garante que funcione sem dependências externas falhas) ---
-const Icon = ({ name }) => {
-  const icons = {
-    wallet: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>,
-    plus: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>,
-    history: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>,
-    user: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
-    logout: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>,
-    trash: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-  };
-  return icons[name] || null;
-};
+const appId = "alavancagem-20k";
 
 export default function App() {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [screen, setScreen] = useState('dashboard');
-  const [transactions, setTransactions] = useState([]);
-  
-  // Auth Form State
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isRegistering, setIsRegistering] = useState(false);
-
-  // Transaction Form State
+  const [entries, setEntries] = useState([]);
   const [amount, setAmount] = useState('');
-  const [desc, setDesc] = useState('');
-  const [type, setType] = useState('entrada');
+  const [isWin, setIsWin] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-  // 1. Inicialização de Auth
+  const BANCA_INICIAL = 200;
+  const META_FINAL = 20000;
+  const PORCENTAGEM_DIARIA_SUGERIDA = 5; // 5% ao dia é uma meta agressiva mas comum
+
   useEffect(() => {
-    const init = async () => {
-      try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        }
-      } catch (e) { console.error(e); }
-    };
-    init();
-    return onAuthStateChanged(auth, (u) => {
+    signInAnonymously(auth).catch(console.error);
+    const unsubscribeAuth = onAuthStateChanged(auth, (u) => {
       setUser(u);
       setLoading(false);
     });
+    return () => unsubscribeAuth();
   }, []);
 
-  // 2. Escuta de Dados (Real-time)
   useEffect(() => {
     if (!user) return;
-    const q = query(
-      collection(db, 'artifacts', appId, 'public', 'data', 'transactions'),
-      orderBy('timestamp', 'desc')
-    );
-    return onSnapshot(q, (snap) => {
-      setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    }, (err) => console.error("Erro Firestore:", err));
+    const q = collection(db, 'artifacts', appId, 'public', 'data', 'bets');
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      setEntries(data.sort((a, b) => a.createdAt?.seconds - b.createdAt?.seconds));
+    });
+    return () => unsubscribe();
   }, [user]);
 
-  // 3. Lógica de Cálculos Profissional
-  const stats = useMemo(() => {
-    return transactions.reduce((acc, tx) => {
-      const val = Number(tx.amount) || 0;
-      if (tx.type === 'entrada') acc.in += val;
-      else acc.out += val;
-      acc.total = acc.in - acc.out;
-      return acc;
-    }, { in: 0, out: 0, total: 0 });
-  }, [transactions]);
-
-  // Ações
-  const handleAuth = async (e) => {
+  const addEntry = async (e) => {
     e.preventDefault();
-    try {
-      if (isRegistering) await createUserWithEmailAndPassword(auth, email, password);
-      else await signInWithEmailAndPassword(auth, email, password);
-    } catch (e) { alert("Erro de Acesso: " + e.message); }
+    if (!amount || !user) return;
+
+    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'bets'), {
+      value: parseFloat(amount),
+      isWin,
+      createdAt: Timestamp.now(),
+      dateLabel: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+    });
+    setAmount('');
   };
 
-  const addTransaction = async (e) => {
-    e.preventDefault();
-    if (!amount || !desc) return;
-    try {
-      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'transactions'), {
-        amount: parseFloat(amount),
-        desc,
-        type,
-        userId: user.uid,
-        userEmail: user.email,
-        timestamp: Date.now()
-      });
-      setAmount('');
-      setDesc('');
-      setScreen('dashboard');
-    } catch (e) { alert("Erro ao salvar dados cósmicos."); }
+  const deleteEntry = async (id) => {
+    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bets', id));
   };
 
-  const removeTx = async (id) => {
-    if(!confirm("Deseja apagar este registro do log?")) return;
-    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'transactions', id));
-  };
+  // Cálculos de Banca
+  const bancaAtual = useMemo(() => {
+    return entries.reduce((acc, curr) => {
+      return curr.isWin ? acc + curr.value : acc - curr.value;
+    }, BANCA_INICIAL);
+  }, [entries]);
 
-  if (loading) return (
-    <div className="min-h-screen bg-[#020617] flex items-center justify-center">
-      <div className="w-10 h-10 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
-    </div>
-  );
+  const progressData = useMemo(() => {
+    let current = BANCA_INICIAL;
+    return [
+      { name: 'Início', saldo: BANCA_INICIAL },
+      ...entries.map((e, i) => {
+        current = e.isWin ? current + e.value : current - e.value;
+        return { name: `Op ${i+1}`, saldo: current };
+      })
+    ];
+  }, [entries]);
 
-  if (!user) return (
-    <div className="min-h-screen bg-[#020617] text-white flex flex-col items-center justify-center p-8 font-sans">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-black italic tracking-tighter">LUNAR <span className="text-sky-500 text-shadow-glow">PRO</span></h1>
-          <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.3em] mt-2">Finanças de Outro Mundo</p>
-        </div>
+  // Sugestões de Gestão
+  const sugestaoAposta = (bancaAtual * 0.03).toFixed(2); // 3% da banca por entrada
+  const stopGainDiario = (bancaAtual * 0.10).toFixed(2); // Parar com 10% de lucro
+  const stopLossDiario = (bancaAtual * 0.05).toFixed(2); // Parar com 5% de prejuízo
 
-        <form onSubmit={handleAuth} className="bg-slate-900/40 p-8 rounded-[2.5rem] border border-white/5 backdrop-blur-md space-y-4">
-          <input 
-            type="email" placeholder="E-mail de Tripulante" 
-            className="w-full bg-black/50 border border-white/10 p-4 rounded-2xl outline-none focus:border-sky-500 transition-all font-medium"
-            value={email} onChange={e => setEmail(e.target.value)}
-          />
-          <input 
-            type="password" placeholder="Senha" 
-            className="w-full bg-black/50 border border-white/10 p-4 rounded-2xl outline-none focus:border-sky-500 transition-all font-medium"
-            value={password} onChange={e => setPassword(e.target.value)}
-          />
-          <button className="w-full bg-sky-500 hover:bg-sky-400 py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg shadow-sky-500/20 transition-all">
-            {isRegistering ? 'CRIAR ACESSO' : 'INICIAR MISSÃO'}
-          </button>
-          <p className="text-center text-[10px] text-slate-500 font-bold uppercase cursor-pointer" onClick={() => setIsRegistering(!isRegistering)}>
-            {isRegistering ? 'Já tem conta? Faça Login' : 'Novo por aqui? Registre-se'}
-          </p>
-        </form>
-      </div>
-    </div>
-  );
+  const porcentagemConcluida = Math.min((bancaAtual / META_FINAL) * 100, 100).toFixed(2);
+
+  if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-emerald-500 font-mono">CARREGANDO DADOS...</div>;
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white font-sans selection:bg-sky-500/30">
-      {/* HEADER FIXO */}
-      <header className="p-6 flex justify-between items-center sticky top-0 bg-[#020617]/80 backdrop-blur-md z-40">
-        <div>
-          <h2 className="text-xl font-black italic tracking-tighter leading-none">LUNAR <span className="text-sky-500">PRO</span></h2>
-          <span className="text-[9px] text-slate-500 font-bold uppercase">{user.email.split('@')[0]}</span>
+    <div className="min-h-screen bg-slate-950 text-slate-200 p-4 md:p-8 font-sans">
+      <div className="max-w-6xl mx-auto">
+        
+        {/* Header Profissional */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+          <div>
+            <h1 className="text-3xl font-black italic tracking-tighter text-white uppercase italic">
+              PRO <span className="text-emerald-500 text-shadow-glow">BET MANAGER</span>
+            </h1>
+            <p className="text-slate-500 text-xs font-bold tracking-widest uppercase">Projeto Alavancagem: R$ 200 → R$ 20.000</p>
+          </div>
+          <div className="flex gap-4">
+            <div className="bg-slate-900 p-3 rounded-xl border border-slate-800">
+              <p className="text-[10px] text-slate-500 uppercase font-bold">Progresso Total</p>
+              <p className="text-xl font-black text-emerald-400">{porcentagemConcluida}%</p>
+            </div>
+          </div>
         </div>
-        <button onClick={() => signOut(auth)} className="p-2 bg-white/5 rounded-xl border border-white/5 hover:bg-red-500/20 transition-colors">
-          <Icon name="logout" />
-        </button>
-      </header>
 
-      <main className="px-6 max-w-2xl mx-auto pb-32">
-        {screen === 'dashboard' && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* CARD DE SALDO MASTER */}
-            <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-sky-950/30 p-8 rounded-[2.5rem] border border-white/10 relative overflow-hidden shadow-2xl">
-              <div className="relative z-10">
-                <p className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-1">Capital em Órbita</p>
-                <h3 className="text-5xl font-black tracking-tighter">
-                  <span className="text-2xl text-slate-500 mr-2">R$</span>
-                  {stats.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </h3>
-                
-                <div className="grid grid-cols-2 gap-4 mt-8">
-                  <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-2xl">
-                    <p className="text-[8px] font-bold text-emerald-400 uppercase mb-1">Inflow</p>
-                    <p className="text-lg font-black text-emerald-300">+{stats.in.toLocaleString('pt-BR')}</p>
-                  </div>
-                  <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl">
-                    <p className="text-[8px] font-bold text-red-400 uppercase mb-1">Outflow</p>
-                    <p className="text-lg font-black text-red-300">-{stats.out.toLocaleString('pt-BR')}</p>
-                  </div>
-                </div>
+        {/* Grid de Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-slate-900 p-5 rounded-2xl border-l-4 border-emerald-500 shadow-xl">
+            <div className="flex justify-between items-start">
+              <span className="text-slate-400 text-sm font-medium">Banca Atual</span>
+              <Wallet size={18} className="text-emerald-500" />
+            </div>
+            <p className="text-2xl font-black mt-2">R$ {bancaAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+          </div>
+
+          <div className="bg-slate-900 p-5 rounded-2xl border-l-4 border-cyan-500 shadow-xl">
+            <div className="flex justify-between items-start">
+              <span className="text-slate-400 text-sm font-medium">Sugestão Entrada</span>
+              <Target size={18} className="text-cyan-500" />
+            </div>
+            <p className="text-2xl font-black mt-2 text-cyan-400">R$ {sugestaoAposta}</p>
+            <p className="text-[10px] text-slate-500 mt-1 uppercase">3% da banca (Conservador)</p>
+          </div>
+
+          <div className="bg-slate-900 p-5 rounded-2xl border-l-4 border-amber-500 shadow-xl">
+            <div className="flex justify-between items-start">
+              <span className="text-slate-400 text-sm font-medium">Meta do Dia</span>
+              <ArrowUpCircle size={18} className="text-amber-500" />
+            </div>
+            <p className="text-2xl font-black mt-2 text-amber-400">R$ {stopGainDiario}</p>
+            <p className="text-[10px] text-slate-500 mt-1 uppercase">Stop Gain (10%)</p>
+          </div>
+
+          <div className="bg-slate-900 p-5 rounded-2xl border-l-4 border-rose-500 shadow-xl">
+            <div className="flex justify-between items-start">
+              <span className="text-slate-400 text-sm font-medium">Limite de Perda</span>
+              <ArrowDownCircle size={18} className="text-rose-500" />
+            </div>
+            <p className="text-2xl font-black mt-2 text-rose-400">R$ {stopLossDiario}</p>
+            <p className="text-[10px] text-slate-500 mt-1 uppercase">Stop Loss (5%)</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Coluna Esquerda: Gráfico e Form */}
+          <div className="lg:col-span-2 space-y-8">
+            
+            {/* Gráfico de Crescimento */}
+            <div className="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-2xl">
+              <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                <TrendingUp size={20} className="text-emerald-500" /> Curva de Crescimento
+              </h3>
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={progressData}>
+                    <defs>
+                      <linearGradient id="colorSaldo" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                    <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `R$${v}`} />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '12px' }}
+                      itemStyle={{ color: '#10b981' }}
+                    />
+                    <Area type="monotone" dataKey="saldo" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorSaldo)" />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
-              {/* Detalhe estético */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-sky-500/10 blur-[80px] rounded-full"></div>
             </div>
 
-            {/* LISTA DE ATIVIDADES */}
-            <section className="space-y-4">
-              <div className="flex justify-between items-center px-2">
-                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Fluxo de Dados</h4>
-                <Icon name="history" />
-              </div>
-              
-              <div className="space-y-3">
-                {transactions.length === 0 && (
-                  <div className="text-center p-12 bg-white/5 rounded-[2rem] border border-dashed border-white/10">
-                    <p className="text-xs text-slate-500 font-bold uppercase">Sem registros detectados.</p>
-                  </div>
-                )}
-                {transactions.map(tx => (
-                  <div key={tx.id} className="bg-slate-900/60 p-5 rounded-3xl border border-white/5 flex items-center justify-between group hover:border-white/10 transition-all">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${tx.type === 'entrada' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
-                        <div className={tx.type === 'entrada' ? 'rotate-0' : 'rotate-180'}>
-                          <Icon name="plus" />
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold">{tx.desc}</p>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase">{tx.userEmail?.split('@')[0]} • {new Date(tx.timestamp).toLocaleDateString('pt-BR')}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className={`text-sm font-black ${tx.type === 'entrada' ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {tx.type === 'entrada' ? '+' : '-'} R$ {tx.amount.toLocaleString('pt-BR')}
-                      </span>
-                      <button onClick={() => removeTx(tx.id)} className="opacity-0 group-hover:opacity-100 p-2 text-slate-600 hover:text-red-400 transition-all">
-                        <Icon name="trash" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </div>
-        )}
-
-        {screen === 'add' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-slate-900 p-8 rounded-[2.5rem] border border-white/10 shadow-2xl">
-              <h3 className="text-sm font-black uppercase tracking-widest text-sky-400 mb-8 italic">Adicionar Movimentação</h3>
-              <form onSubmit={addTransaction} className="space-y-6">
-                <div className="flex p-1.5 bg-black/50 rounded-2xl border border-white/5">
-                  <button type="button" onClick={() => setType('entrada')} className={`flex-1 py-3 text-[10px] font-black rounded-xl transition-all ${type === 'entrada' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-500'}`}>LUCRO / ENTRADA</button>
-                  <button type="button" onClick={() => setType('saida')} className={`flex-1 py-3 text-[10px] font-black rounded-xl transition-all ${type === 'saida' ? 'bg-red-500 text-white shadow-lg' : 'text-slate-500'}`}>GASTO / SAÍDA</button>
+            {/* Formulário de Registro */}
+            <div className="bg-emerald-500/5 p-6 rounded-3xl border border-emerald-500/20">
+              <h3 className="text-lg font-bold mb-4">Registrar Operação</h3>
+              <form onSubmit={addEntry} className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    placeholder="Valor do Lucro/Perda (Ex: 20.00)"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    required
+                  />
                 </div>
-
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-black text-slate-500 uppercase ml-2 tracking-widest">Descrição do Evento</label>
-                    <input 
-                      type="text" required placeholder="Ex: Salário, Venda, Aluguel..." 
-                      className="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-sky-500 transition-all font-bold text-sm"
-                      value={desc} onChange={e => setDesc(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-black text-slate-500 uppercase ml-2 tracking-widest">Valor Financeiro</label>
-                    <input 
-                      type="number" step="0.01" required placeholder="0.00" 
-                      className="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-sky-500 transition-all font-black text-xl text-sky-400"
-                      value={amount} onChange={e => setAmount(e.target.value)}
-                    />
-                  </div>
+                <div className="flex gap-2">
+                  <button 
+                    type="button"
+                    onClick={() => setIsWin(true)}
+                    className={`flex-1 md:flex-none px-6 rounded-2xl font-bold transition-all ${isWin ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' : 'bg-slate-800 text-slate-500'}`}
+                  >
+                    WIN
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setIsWin(false)}
+                    className={`flex-1 md:flex-none px-6 rounded-2xl font-bold transition-all ${!isWin ? 'bg-rose-600 text-white shadow-lg shadow-rose-900/40' : 'bg-slate-800 text-slate-500'}`}
+                  >
+                    LOSS
+                  </button>
                 </div>
-
-                <button className="w-full bg-sky-500 py-5 rounded-3xl font-black text-xs uppercase tracking-widest shadow-xl shadow-sky-500/20 active:scale-95 transition-all">
-                  PROCESSAR TRANSAÇÃO
+                <button 
+                  type="submit"
+                  className="bg-white text-black font-black px-8 py-4 rounded-2xl hover:bg-emerald-400 transition-all uppercase tracking-tighter"
+                >
+                  Lançar Agora
                 </button>
               </form>
             </div>
           </div>
-        )}
 
-        {screen === 'profile' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-slate-900/50 p-8 rounded-[2.5rem] border border-white/10 text-center">
-              <div className="w-20 h-20 bg-sky-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-sky-400">
-                <Icon name="user" />
-              </div>
-              <h3 className="font-black text-lg">{user.email}</h3>
-              <p className="text-[10px] text-slate-500 font-bold uppercase mt-1">Status: Comandante Ativo</p>
-              
-              <div className="mt-8 pt-8 border-t border-white/5 space-y-4">
-                <div className="flex justify-between text-xs font-bold">
-                  <span className="text-slate-500">ID DA NAVE</span>
-                  <span className="text-sky-400 uppercase tracking-tighter">{appId}</span>
-                </div>
-                <div className="flex justify-between text-xs font-bold">
-                  <span className="text-slate-500">LOGS TOTAIS</span>
-                  <span>{transactions.length} registros</span>
-                </div>
+          {/* Coluna Direita: Histórico e Dicas */}
+          <div className="space-y-6">
+            
+            {/* Alerta de Cassino */}
+            <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-2xl flex gap-3">
+              <AlertTriangle className="text-amber-500 shrink-0" size={20} />
+              <div>
+                <p className="text-amber-500 font-bold text-xs uppercase">Atenção Gabriel</p>
+                <p className="text-[10px] text-slate-400 leading-relaxed mt-1">
+                  Cassinos têm vantagem matemática. Use este sistema para ter disciplina. Bateu a meta do dia? **SAIA DO SITE.** O segredo é o tempo, não a sorte.
+                </p>
               </div>
             </div>
+
+            {/* Lista de Histórico */}
+            <div className="bg-slate-900 rounded-3xl border border-slate-800 overflow-hidden">
+              <div className="p-5 border-b border-slate-800 flex justify-between items-center">
+                <h4 className="font-bold text-sm uppercase tracking-widest text-slate-400">Histórico</h4>
+                <Calendar size={16} className="text-slate-600" />
+              </div>
+              <div className="max-h-[400px] overflow-y-auto p-4 space-y-3">
+                {entries.length === 0 && <p className="text-center text-slate-600 py-10 text-xs italic">Nenhum registro hoje.</p>}
+                {[...entries].reverse().map((entry) => (
+                  <div key={entry.id} className="bg-slate-800/50 p-3 rounded-xl flex justify-between items-center group">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-1.5 rounded-lg ${entry.isWin ? 'bg-emerald-500/20 text-emerald-500' : 'bg-rose-500/20 text-rose-500'}`}>
+                        {entry.isWin ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />}
+                      </div>
+                      <div>
+                        <p className={`text-sm font-bold ${entry.isWin ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          {entry.isWin ? '+' : '-'} R$ {entry.value.toFixed(2)}
+                        </p>
+                        <p className="text-[10px] text-slate-500 font-mono">{entry.dateLabel}</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => deleteEntry(entry.id)}
+                      className="opacity-0 group-hover:opacity-100 p-2 text-slate-500 hover:text-rose-500 transition-all"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Meta Final Progress Bar */}
+            <div className="bg-slate-900 p-6 rounded-3xl border border-slate-800">
+              <div className="flex justify-between text-xs font-bold mb-3 uppercase tracking-tighter">
+                <span className="text-slate-500">Início: R$ 200</span>
+                <span className="text-emerald-500">Meta: R$ 20.000</span>
+              </div>
+              <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-emerald-600 to-cyan-400 transition-all duration-1000"
+                  style={{ width: `${porcentagemConcluida}%` }}
+                ></div>
+              </div>
+              <p className="text-center text-[10px] text-slate-600 mt-4 uppercase font-bold italic">
+                "A disciplina é a alma do lucro."
+              </p>
+            </div>
+
           </div>
-        )}
-      </main>
-
-      {/* BARRA DE NAVEGAÇÃO PROFISSIONAL */}
-      <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-slate-900/90 backdrop-blur-3xl border border-white/10 h-20 rounded-[2.5rem] flex justify-around items-center px-8 shadow-2xl z-50">
-        <button onClick={() => setScreen('dashboard')} className={`flex flex-col items-center gap-1 transition-all ${screen === 'dashboard' ? 'text-sky-400 scale-110' : 'text-slate-600'}`}>
-          <Icon name="wallet" />
-          <span className="text-[8px] font-black uppercase">Capital</span>
-        </button>
-        
-        <button onClick={() => setScreen('add')} className="w-14 h-14 bg-sky-500 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-sky-500/30 -translate-y-4 border-4 border-[#020617] active:scale-90 transition-all">
-          <Icon name="plus" />
-        </button>
-
-        <button onClick={() => setScreen('profile')} className={`flex flex-col items-center gap-1 transition-all ${screen === 'profile' ? 'text-sky-400 scale-110' : 'text-slate-600'}`}>
-          <Icon name="user" />
-          <span className="text-[8px] font-black uppercase">Nave</span>
-        </button>
-      </nav>
-
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; overflow-x: hidden; }
-        .text-shadow-glow { text-shadow: 0 0 15px rgba(14, 165, 233, 0.4); }
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-      `}</style>
+        </div>
+      </div>
     </div>
   );
 }
-
-```
