@@ -11,8 +11,6 @@ import {
   Timestamp 
 } from 'firebase/firestore';
 import { 
-  LineChart, 
-  Line, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -30,7 +28,9 @@ import {
   Wallet,
   AlertTriangle,
   CheckCircle2,
-  Calendar
+  Calendar,
+  Zap,
+  BarChart3
 } from 'lucide-react';
 
 // --- CONFIGURAÇÃO FIREBASE ---
@@ -58,7 +58,6 @@ export default function App() {
 
   const BANCA_INICIAL = 200;
   const META_FINAL = 20000;
-  const PORCENTAGEM_DIARIA_SUGERIDA = 5; // 5% ao dia é uma meta agressiva mas comum
 
   useEffect(() => {
     signInAnonymously(auth).catch(console.error);
@@ -75,7 +74,7 @@ export default function App() {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
       setEntries(data.sort((a, b) => a.createdAt?.seconds - b.createdAt?.seconds));
-    });
+    }, (error) => console.error("Firestore Error:", error));
     return () => unsubscribe();
   }, [user]);
 
@@ -83,20 +82,27 @@ export default function App() {
     e.preventDefault();
     if (!amount || !user) return;
 
-    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'bets'), {
-      value: parseFloat(amount),
-      isWin,
-      createdAt: Timestamp.now(),
-      dateLabel: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-    });
-    setAmount('');
+    try {
+      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'bets'), {
+        value: parseFloat(amount),
+        isWin,
+        createdAt: Timestamp.now(),
+        dateLabel: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+      });
+      setAmount('');
+    } catch (err) {
+      console.error("Erro ao adicionar:", err);
+    }
   };
 
   const deleteEntry = async (id) => {
-    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bets', id));
+    try {
+      await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bets', id));
+    } catch (err) {
+      console.error("Erro ao eliminar:", err);
+    }
   };
 
-  // Cálculos de Banca
   const bancaAtual = useMemo(() => {
     return entries.reduce((acc, curr) => {
       return curr.isWin ? acc + curr.value : acc - curr.value;
@@ -114,212 +120,299 @@ export default function App() {
     ];
   }, [entries]);
 
-  // Sugestões de Gestão
-  const sugestaoAposta = (bancaAtual * 0.03).toFixed(2); // 3% da banca por entrada
-  const stopGainDiario = (bancaAtual * 0.10).toFixed(2); // Parar com 10% de lucro
-  const stopLossDiario = (bancaAtual * 0.05).toFixed(2); // Parar com 5% de prejuízo
+  const sugestaoAposta = (bancaAtual * 0.03).toFixed(2); 
+  const stopGainDiario = (bancaAtual * 0.10).toFixed(2); 
+  const stopLossDiario = (bancaAtual * 0.05).toFixed(2); 
 
   const porcentagemConcluida = Math.min((bancaAtual / META_FINAL) * 100, 100).toFixed(2);
 
-  if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-emerald-500 font-mono">CARREGANDO DADOS...</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
+        <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+        <p className="mt-4 text-emerald-500 font-bold tracking-widest animate-pulse">SINCRONIZANDO BANCA...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 p-4 md:p-8 font-sans">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-[#050505] text-slate-200 font-sans selection:bg-emerald-500 selection:text-white">
+      {/* Barra de Progresso Superior */}
+      <div className="h-1 w-full bg-slate-900 sticky top-0 z-50">
+        <div 
+          className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-1000 shadow-[0_0_15px_rgba(16,185,129,0.5)]"
+          style={{ width: `${porcentagemConcluida}%` }}
+        ></div>
+      </div>
+
+      <div className="max-w-7xl mx-auto p-4 md:p-8">
         
-        {/* Header Profissional */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-          <div>
-            <h1 className="text-3xl font-black italic tracking-tighter text-white uppercase italic">
-              PRO <span className="text-emerald-500 text-shadow-glow">BET MANAGER</span>
-            </h1>
-            <p className="text-slate-500 text-xs font-bold tracking-widest uppercase">Projeto Alavancagem: R$ 200 → R$ 20.000</p>
-          </div>
-          <div className="flex gap-4">
-            <div className="bg-slate-900 p-3 rounded-xl border border-slate-800">
-              <p className="text-[10px] text-slate-500 uppercase font-bold">Progresso Total</p>
-              <p className="text-xl font-black text-emerald-400">{porcentagemConcluida}%</p>
+        {/* Header Estilo Dashboard Elite */}
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Zap className="text-emerald-500 fill-emerald-500" size={20} />
+              <h1 className="text-2xl md:text-4xl font-black tracking-tighter text-white uppercase italic italic">
+                LUNAR <span className="text-emerald-500">PRO</span>
+              </h1>
             </div>
+            <p className="text-slate-500 text-[10px] font-bold tracking-[0.2em] uppercase">Gestão de Elite • Alavancagem 20k</p>
           </div>
-        </div>
-
-        {/* Grid de Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-slate-900 p-5 rounded-2xl border-l-4 border-emerald-500 shadow-xl">
-            <div className="flex justify-between items-start">
-              <span className="text-slate-400 text-sm font-medium">Banca Atual</span>
-              <Wallet size={18} className="text-emerald-500" />
-            </div>
-            <p className="text-2xl font-black mt-2">R$ {bancaAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-          </div>
-
-          <div className="bg-slate-900 p-5 rounded-2xl border-l-4 border-cyan-500 shadow-xl">
-            <div className="flex justify-between items-start">
-              <span className="text-slate-400 text-sm font-medium">Sugestão Entrada</span>
-              <Target size={18} className="text-cyan-500" />
-            </div>
-            <p className="text-2xl font-black mt-2 text-cyan-400">R$ {sugestaoAposta}</p>
-            <p className="text-[10px] text-slate-500 mt-1 uppercase">3% da banca (Conservador)</p>
-          </div>
-
-          <div className="bg-slate-900 p-5 rounded-2xl border-l-4 border-amber-500 shadow-xl">
-            <div className="flex justify-between items-start">
-              <span className="text-slate-400 text-sm font-medium">Meta do Dia</span>
-              <ArrowUpCircle size={18} className="text-amber-500" />
-            </div>
-            <p className="text-2xl font-black mt-2 text-amber-400">R$ {stopGainDiario}</p>
-            <p className="text-[10px] text-slate-500 mt-1 uppercase">Stop Gain (10%)</p>
-          </div>
-
-          <div className="bg-slate-900 p-5 rounded-2xl border-l-4 border-rose-500 shadow-xl">
-            <div className="flex justify-between items-start">
-              <span className="text-slate-400 text-sm font-medium">Limite de Perda</span>
-              <ArrowDownCircle size={18} className="text-rose-500" />
-            </div>
-            <p className="text-2xl font-black mt-2 text-rose-400">R$ {stopLossDiario}</p>
-            <p className="text-[10px] text-slate-500 mt-1 uppercase">Stop Loss (5%)</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* Coluna Esquerda: Gráfico e Form */}
-          <div className="lg:col-span-2 space-y-8">
-            
-            {/* Gráfico de Crescimento */}
-            <div className="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-2xl">
-              <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-                <TrendingUp size={20} className="text-emerald-500" /> Curva de Crescimento
+          <div className="flex items-center gap-3 bg-slate-900/40 border border-slate-800 p-2 rounded-2xl backdrop-blur-md">
+            <div className="p-3 bg-emerald-500/10 rounded-xl">
+              <BarChart3 className="text-emerald-500" size={24} />
+            </div>
+            <div className="pr-4">
+              <p className="text-[10px] text-slate-500 font-bold uppercase">Progresso</p>
+              <p className="text-xl font-black text-white">{porcentagemConcluida}%</p>
+            </div>
+          </div>
+        </header>
+
+        {/* Cartões de Monitorização */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+          <StatCard 
+            title="Banca Atual" 
+            value={`R$ ${bancaAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+            icon={<Wallet size={20} />}
+            color="emerald"
+          />
+          <StatCard 
+            title="Sugestão Entrada" 
+            value={`R$ ${sugestaoAposta}`}
+            subtitle="3% de Segurança"
+            icon={<Target size={20} />}
+            color="cyan"
+          />
+          <StatCard 
+            title="Meta Diária (Stop)" 
+            value={`R$ ${stopGainDiario}`}
+            subtitle="Alvo de 10%"
+            icon={<ArrowUpCircle size={20} />}
+            color="amber"
+          />
+          <StatCard 
+            title="Limite Perda" 
+            value={`R$ ${stopLossDiario}`}
+            subtitle="Segurança 5%"
+            icon={<ArrowDownCircle size={20} />}
+            color="rose"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          {/* Gráfico de Performance - Lado Esquerdo */}
+          <div className="lg:col-span-8 space-y-8">
+            <div className="bg-[#0f0f0f] border border-slate-800/50 rounded-[2.5rem] p-6 md:p-8 shadow-2xl relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-8 opacity-5">
+                <TrendingUp size={120} />
+              </div>
+              <h3 className="text-lg font-bold mb-8 flex items-center gap-3 text-white">
+                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
+                Performance da Banca
               </h3>
-              <div className="h-[300px] w-full">
+              <div className="h-[350px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={progressData}>
                     <defs>
-                      <linearGradient id="colorSaldo" x1="0" y1="0" x2="0" y2="1">
+                      <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
                         <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                    <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `R$${v}`} />
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '12px' }}
-                      itemStyle={{ color: '#10b981' }}
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} opacity={0.3} />
+                    <XAxis dataKey="name" hide />
+                    <YAxis 
+                      stroke="#475569" 
+                      fontSize={10} 
+                      tickLine={false} 
+                      axisLine={false} 
+                      tickFormatter={(v) => `R$${v}`}
                     />
-                    <Area type="monotone" dataKey="saldo" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorSaldo)" />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#000', border: '1px solid #334155', borderRadius: '16px', fontSize: '12px' }}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="saldo" 
+                      stroke="#10b981" 
+                      strokeWidth={4} 
+                      fillOpacity={1} 
+                      fill="url(#chartGradient)" 
+                      animationDuration={2000}
+                    />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
-            {/* Formulário de Registro */}
-            <div className="bg-emerald-500/5 p-6 rounded-3xl border border-emerald-500/20">
-              <h3 className="text-lg font-bold mb-4">Registrar Operação</h3>
-              <form onSubmit={addEntry} className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
+            {/* Painel de Operação */}
+            <div className="bg-gradient-to-br from-slate-900 to-black border border-slate-800 rounded-[2.5rem] p-6 md:p-8 shadow-xl">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Registrar Operação</h3>
+                <span className="text-[10px] font-bold text-slate-500 tracking-widest bg-slate-800 px-3 py-1 rounded-full">BACCARAT / CASINO</span>
+              </div>
+              
+              <form onSubmit={addEntry} className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                <div className="md:col-span-5 relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold">R$</span>
                   <input 
                     type="number" 
                     step="0.01"
-                    placeholder="Valor do Lucro/Perda (Ex: 20.00)"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-white"
+                    placeholder="Valor Ganho ou Perdido"
+                    className="w-full bg-black/40 border border-slate-800 rounded-2xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-white font-bold"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     required
                   />
                 </div>
-                <div className="flex gap-2">
+                
+                <div className="md:col-span-4 flex p-1 bg-black/40 border border-slate-800 rounded-2xl">
                   <button 
                     type="button"
                     onClick={() => setIsWin(true)}
-                    className={`flex-1 md:flex-none px-6 rounded-2xl font-bold transition-all ${isWin ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' : 'bg-slate-800 text-slate-500'}`}
+                    className={`flex-1 flex items-center justify-center gap-2 rounded-xl font-black text-xs transition-all ${isWin ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
                   >
-                    WIN
+                    <ArrowUpCircle size={16} /> WIN
                   </button>
                   <button 
                     type="button"
                     onClick={() => setIsWin(false)}
-                    className={`flex-1 md:flex-none px-6 rounded-2xl font-bold transition-all ${!isWin ? 'bg-rose-600 text-white shadow-lg shadow-rose-900/40' : 'bg-slate-800 text-slate-500'}`}
+                    className={`flex-1 flex items-center justify-center gap-2 rounded-xl font-black text-xs transition-all ${!isWin ? 'bg-rose-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
                   >
-                    LOSS
+                    <ArrowDownCircle size={16} /> LOSS
                   </button>
                 </div>
+
                 <button 
                   type="submit"
-                  className="bg-white text-black font-black px-8 py-4 rounded-2xl hover:bg-emerald-400 transition-all uppercase tracking-tighter"
+                  className="md:col-span-3 bg-white text-black font-black py-4 rounded-2xl hover:bg-emerald-400 hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-tighter text-sm"
                 >
-                  Lançar Agora
+                  Confirmar
                 </button>
               </form>
             </div>
           </div>
 
-          {/* Coluna Direita: Histórico e Dicas */}
-          <div className="space-y-6">
+          {/* Sidebar - Lado Direito */}
+          <div className="lg:col-span-4 space-y-6">
             
-            {/* Alerta de Cassino */}
-            <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-2xl flex gap-3">
-              <AlertTriangle className="text-amber-500 shrink-0" size={20} />
-              <div>
-                <p className="text-amber-500 font-bold text-xs uppercase">Atenção Gabriel</p>
-                <p className="text-[10px] text-slate-400 leading-relaxed mt-1">
-                  Cassinos têm vantagem matemática. Use este sistema para ter disciplina. Bateu a meta do dia? **SAIA DO SITE.** O segredo é o tempo, não a sorte.
-                </p>
+            {/* Aviso de Disciplina */}
+            <div className="bg-amber-500/5 border border-amber-500/20 p-5 rounded-3xl group">
+              <div className="flex gap-4">
+                <div className="bg-amber-500/20 p-2 rounded-lg h-fit group-hover:rotate-12 transition-transform">
+                  <AlertTriangle className="text-amber-500" size={20} />
+                </div>
+                <div>
+                  <p className="text-amber-500 font-black text-xs uppercase tracking-widest">Disciplina é Lucro</p>
+                  <p className="text-[10px] text-slate-400 leading-relaxed mt-1 font-medium">
+                    Gabriel, o mercado tira de quem tem pressa e dá para quem tem paciência. Bateu o <span className="text-amber-400">Stop Gain</span>? Sai do jogo imediatamente.
+                  </p>
+                </div>
               </div>
             </div>
 
-            {/* Lista de Histórico */}
-            <div className="bg-slate-900 rounded-3xl border border-slate-800 overflow-hidden">
-              <div className="p-5 border-b border-slate-800 flex justify-between items-center">
-                <h4 className="font-bold text-sm uppercase tracking-widest text-slate-400">Histórico</h4>
-                <Calendar size={16} className="text-slate-600" />
+            {/* Histórico Recente */}
+            <div className="bg-[#0f0f0f] border border-slate-800 rounded-[2.5rem] overflow-hidden flex flex-col h-[520px]">
+              <div className="p-6 border-b border-slate-800/50 flex justify-between items-center bg-black/20">
+                <h4 className="font-black text-xs uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
+                  <Calendar size={14} className="text-emerald-500" /> Atividade Recente
+                </h4>
+                <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
               </div>
-              <div className="max-h-[400px] overflow-y-auto p-4 space-y-3">
-                {entries.length === 0 && <p className="text-center text-slate-600 py-10 text-xs italic">Nenhum registro hoje.</p>}
-                {[...entries].reverse().map((entry) => (
-                  <div key={entry.id} className="bg-slate-800/50 p-3 rounded-xl flex justify-between items-center group">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-1.5 rounded-lg ${entry.isWin ? 'bg-emerald-500/20 text-emerald-500' : 'bg-rose-500/20 text-rose-500'}`}>
-                        {entry.isWin ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />}
-                      </div>
-                      <div>
-                        <p className={`text-sm font-bold ${entry.isWin ? 'text-emerald-400' : 'text-rose-400'}`}>
-                          {entry.isWin ? '+' : '-'} R$ {entry.value.toFixed(2)}
-                        </p>
-                        <p className="text-[10px] text-slate-500 font-mono">{entry.dateLabel}</p>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => deleteEntry(entry.id)}
-                      className="opacity-0 group-hover:opacity-100 p-2 text-slate-500 hover:text-rose-500 transition-all"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+              
+              <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                {entries.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-slate-700 space-y-2">
+                    <Zap size={32} opacity={0.1} />
+                    <p className="text-[10px] uppercase font-bold tracking-widest italic text-center px-10">Aguardando primeira operação da sessão...</p>
                   </div>
-                ))}
+                ) : (
+                  <div className="space-y-3">
+                    {[...entries].reverse().map((entry) => (
+                      <div key={entry.id} className="bg-slate-900/30 border border-slate-800/50 p-4 rounded-2xl flex justify-between items-center group hover:border-slate-700 transition-all">
+                        <div className="flex items-center gap-4">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${entry.isWin ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                            {entry.isWin ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
+                          </div>
+                          <div>
+                            <p className={`text-base font-black ${entry.isWin ? 'text-emerald-400' : 'text-rose-400'}`}>
+                              {entry.isWin ? '+' : '-'} R$ {entry.value.toFixed(2)}
+                            </p>
+                            <p className="text-[9px] text-slate-500 font-bold uppercase tracking-tighter">{entry.dateLabel} • SUCESSO</p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => deleteEntry(entry.id)}
+                          className="opacity-0 group-hover:opacity-100 p-2 text-slate-600 hover:text-rose-500 transition-all hover:bg-rose-500/10 rounded-lg"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              <div className="p-6 bg-black/40 border-t border-slate-800/50">
+                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-[0.2em]">
+                  <span className="text-slate-500 italic">Meta Final</span>
+                  <span className="text-emerald-500">R$ 20.000,00</span>
+                </div>
               </div>
             </div>
-
-            {/* Meta Final Progress Bar */}
-            <div className="bg-slate-900 p-6 rounded-3xl border border-slate-800">
-              <div className="flex justify-between text-xs font-bold mb-3 uppercase tracking-tighter">
-                <span className="text-slate-500">Início: R$ 200</span>
-                <span className="text-emerald-500">Meta: R$ 20.000</span>
-              </div>
-              <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-emerald-600 to-cyan-400 transition-all duration-1000"
-                  style={{ width: `${porcentagemConcluida}%` }}
-                ></div>
-              </div>
-              <p className="text-center text-[10px] text-slate-600 mt-4 uppercase font-bold italic">
-                "A disciplina é a alma do lucro."
-              </p>
-            </div>
-
           </div>
         </div>
       </div>
+      
+      {/* Footer Minimalista */}
+      <footer className="mt-10 py-10 border-t border-slate-900 text-center">
+        <p className="text-[9px] text-slate-700 font-bold tracking-[0.5em] uppercase">
+          Lunar Beta System • Cloud Secure v2.0
+        </p>
+      </footer>
     </div>
+  );
+}
+
+// Componente Auxiliar para os Cards de Estatística
+function StatCard({ title, value, icon, color, subtitle }) {
+  const colors = {
+    emerald: "border-emerald-500/50 text-emerald-400 bg-emerald-500/5 shadow-emerald-900/10",
+    cyan: "border-cyan-500/50 text-cyan-400 bg-cyan-500/5 shadow-cyan-900/10",
+    amber: "border-amber-500/50 text-amber-400 bg-amber-500/5 shadow-amber-900/10",
+    rose: "border-rose-500/50 text-rose-400 bg-rose-500/5 shadow-rose-900/10"
+  };
+
+  return (
+    <div className={`p-6 rounded-[2rem] border backdrop-blur-sm transition-all hover:scale-[1.02] ${colors[color]}`}>
+      <div className="flex justify-between items-center mb-3">
+        <span className="text-[10px] font-black uppercase tracking-widest opacity-70">{title}</span>
+        <div className="opacity-50">{icon}</div>
+      </div>
+      <p className="text-2xl font-black tracking-tighter text-white">{value}</p>
+      {subtitle && <p className="text-[9px] font-bold uppercase tracking-tight opacity-40 mt-1">{subtitle}</p>}
+    </div>
+  );
+}
+
+function TrendingDown({ size, className }) {
+  return (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      className={className}
+    >
+      <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
+      <polyline points="17 18 23 18 23 12"></polyline>
+    </svg>
   );
 }
