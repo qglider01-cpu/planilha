@@ -1,465 +1,344 @@
-```html
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lunar PRO - Gestão de Elite</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- Firebase App (Compat) -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
-        :root { --lunar-glow: #38bdf8; --lunar-deep: #020617; }
-        
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background: var(--lunar-deep); 
-            color: white; 
-            margin: 0; 
-            overflow-x: hidden; 
-            min-height: 100vh;
-            -webkit-tap-highlight-color: transparent;
+```react
+import React, { useState, useEffect, useMemo } from 'react';
+import { initializeApp } from 'firebase/app';
+import { 
+  getAuth, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  onAuthStateChanged, 
+  signOut,
+  signInAnonymously,
+  signInWithCustomToken
+} from 'firebase/auth';
+import { 
+  getFirestore, 
+  collection, 
+  doc, 
+  addDoc, 
+  onSnapshot, 
+  query, 
+  orderBy, 
+  deleteDoc, 
+  setDoc,
+  getDoc,
+  where,
+  limit
+} from 'firebase/firestore';
+
+// --- CONFIGURAÇÃO E INICIALIZAÇÃO ---
+const firebaseConfig = JSON.parse(__firebase_config);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'lunar-pro-v2';
+
+// --- COMPONENTES AUXILIARES ---
+const LucideIcon = ({ name, className }) => <i className={`fas ${name} ${className}`}></i>;
+
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [screen, setScreen] = useState('dashboard');
+  const [transactions, setTransactions] = useState([]);
+  const [goal, setGoal] = useState({ title: 'Reserva', target: 5000 });
+  const [allowedEmails, setAllowedEmails] = useState([]);
+  const [authMode, setAuthMode] = useState('login');
+  
+  // Form States
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [amount, setAmount] = useState('');
+  const [desc, setDesc] = useState('');
+  const [type, setType] = useState('saida');
+  const [category, setCategory] = useState('outro');
+
+  // --- 1. AUTENTICAÇÃO PROFISSIONAL ---
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
         }
+      } catch (e) { console.error("Auth Token Error", e); }
+    };
+    initAuth();
 
-        .stars-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: radial-gradient(circle at top right, #1e293b 0%, #020617 100%); }
-        .star { position: absolute; background: white; border-radius: 50%; opacity: 0.5; animation: twinkle var(--duration) infinite ease-in-out; }
-        
-        @keyframes twinkle { 0%, 100% { opacity: 0.2; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.3); } }
-        
-        .glass-card { 
-            background: rgba(30, 41, 59, 0.4); 
-            backdrop-filter: blur(20px); 
-            -webkit-backdrop-filter: blur(20px); 
-            border: 1px solid rgba(255, 255, 255, 0.08); 
-            border-radius: 24px; 
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // --- 2. SINCRONIZAÇÃO DE DADOS EM TEMPO REAL ---
+  useEffect(() => {
+    if (!user) return;
+
+    // Coleção de Transações (Padrão RULE 1)
+    const q = query(
+      collection(db, 'artifacts', appId, 'public', 'data', 'transactions'),
+      orderBy('timestamp', 'desc')
+    );
+
+    const unsubTx = onSnapshot(q, (snapshot) => {
+      const txs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setTransactions(txs);
+    }, (err) => console.error("Erro ao buscar transações:", err));
+
+    // Configurações e Meta
+    const unsubSettings = onSnapshot(
+      doc(db, 'artifacts', appId, 'public', 'data', 'settings'),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.goal) setGoal(data.goal);
+          if (data.allowedEmails) setAllowedEmails(data.allowedEmails);
         }
+      }
+    );
 
-        .lunar-input { 
-            background: rgba(15, 23, 42, 0.8); 
-            border: 1px solid rgba(255, 255, 255, 0.1); 
-            transition: all 0.3s ease; 
-            color: white; 
-            font-size: 16px !important;
-        }
+    return () => { unsubTx(); unsubSettings(); };
+  }, [user]);
 
-        .lunar-input:focus { border-color: var(--lunar-glow); outline: none; box-shadow: 0 0 15px rgba(56, 189, 248, 0.2); }
+  // --- 3. LÓGICA DE NEGÓCIO ---
+  const totals = useMemo(() => {
+    return transactions.reduce((acc, tx) => {
+      const val = parseFloat(tx.amount) || 0;
+      if (tx.type === 'entrada') acc.in += val;
+      else acc.out += val;
+      acc.total = acc.in - acc.out;
+      return acc;
+    }, { in: 0, out: 0, total: 0 });
+  }, [transactions]);
+
+  const handleTransaction = async (e) => {
+    e.preventDefault();
+    if (!user || !amount || !desc) return;
+
+    try {
+      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'transactions'), {
+        amount: parseFloat(amount),
+        desc,
+        type,
+        category,
+        userId: user.uid,
+        userEmail: user.email,
+        timestamp: Date.now(),
+        date: new Date().toISOString()
+      });
+      setAmount('');
+      setDesc('');
+      setScreen('dashboard');
+    } catch (err) {
+      alert("Falha na sincronização orbital: " + err.message);
+    }
+  };
+
+  const deleteTx = async (id) => {
+    try {
+      await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'transactions', id));
+    } catch (e) { alert("Erro ao deletar."); }
+  };
+
+  // --- RENDERS ---
+  if (loading) return (
+    <div className="min-h-screen bg-[#020617] flex items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-sky-500"></div>
+    </div>
+  );
+
+  if (!user) return (
+    <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6 text-white">
+      <div className="w-full max-w-md bg-slate-900/50 backdrop-blur-xl p-8 rounded-3xl border border-white/10">
+        <h1 className="text-3xl font-black mb-2 italic">LUNAR <span className="text-sky-400">PRO</span></h1>
+        <p className="text-slate-400 text-xs mb-8 uppercase tracking-widest font-bold">Protocolo de Acesso</p>
         
-        .fade-in { animation: fadeInUp 0.4s ease-out forwards; }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .category-pill { transition: all 0.2s; cursor: pointer; flex-shrink: 0; }
-        .category-pill.active { background: #38bdf8; color: #020617; transform: scale(1.05); }
+        <div className="space-y-4">
+          <input 
+            type="email" 
+            placeholder="E-mail" 
+            className="w-full bg-black/40 border border-white/10 p-4 rounded-2xl outline-none focus:border-sky-500 transition-all"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+          />
+          <input 
+            type="password" 
+            placeholder="Senha" 
+            className="w-full bg-black/40 border border-white/10 p-4 rounded-2xl outline-none focus:border-sky-500 transition-all"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+          />
+          <button 
+            onClick={async () => {
+              try {
+                if(authMode === 'login') await signInWithEmailAndPassword(auth, email, password);
+                else await createUserWithEmailAndPassword(auth, email, password);
+              } catch(e) { alert(e.message); }
+            }}
+            className="w-full bg-sky-500 hover:bg-sky-400 text-white font-bold py-4 rounded-2xl shadow-lg shadow-sky-500/20 transition-all"
+          >
+            {authMode === 'login' ? 'INICIAR MISSÃO' : 'CRIAR CONTA'}
+          </button>
+          <p 
+            className="text-center text-[10px] text-slate-500 cursor-pointer font-bold uppercase mt-4"
+            onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
+          >
+            {authMode === 'login' ? 'Não possui acesso? Registre-se' : 'Já possui conta? Faça login'}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  return (
+    <div className="min-h-screen bg-[#020617] text-white pb-24 font-['Plus_Jakarta_Sans']">
+      {/* HEADER */}
+      <header className="p-6 flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-black italic">LUNAR <span className="text-sky-400">PRO</span></h2>
+          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">Comandante: {user.email}</p>
+        </div>
+        <button onClick={() => signOut(auth)} className="bg-white/5 p-3 rounded-xl border border-white/10">
+          <LucideIcon name="fa-sign-out-alt" className="text-slate-400" />
+        </button>
+      </header>
 
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 75px;
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            z-index: 50;
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-    </style>
-</head>
-<body>
-    <div class="stars-container" id="stars"></div>
-    <div id="root"></div>
-
-    <script type="text/babel">
-        const firebaseConfig = {
-            apiKey: "AIzaSyA-u9ii8P_ril727CzvAtIVFKU76TrcHzg",
-            authDomain: "planilha-a251b.firebaseapp.com",
-            projectId: "planilha-a251b",
-            storageBucket: "planilha-a251b.firebasestorage.app",
-            messagingSenderId: "1003937015443",
-            appId: "1:1003937015443:web:cf65009507e29a32fa4f66"
-        };
-
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-        const appId = "lunar-pro-v2";
-        const publicDoc = db.collection('artifacts').doc(appId).collection('public').doc('data');
-
-        const { useState, useEffect } = React;
-
-        const CATEGORIES = [
-            { id: 'casa', label: 'Casa', icon: 'fa-home' },
-            { id: 'comida', label: 'Comida', icon: 'fa-utensils' },
-            { id: 'lazer', label: 'Lazer', icon: 'fa-gamepad' },
-            { id: 'saude', label: 'Saúde', icon: 'fa-heartbeat' },
-            { id: 'mercado', label: 'Mercado', icon: 'fa-shopping-cart' },
-            { id: 'outro', label: 'Outros', icon: 'fa-ellipsis-h' }
-        ];
-
-        function App() {
-            const [user, setUser] = useState(null);
-            const [screen, setScreen] = useState('auth');
-            const [authMode, setAuthMode] = useState('login');
-            const [transactions, setTransactions] = useState([]);
-            const [allowedEmails, setAllowedEmails] = useState([]);
-            const [goal, setGoal] = useState({ title: 'Reserva de Emergência', target: 5000 });
-            const [loading, setLoading] = useState(true);
-            const [formData, setFormData] = useState({ 
-                email: '', password: '', amount: '', desc: '', type: 'saida', 
-                category: 'outro', newUserEmail: '', goalTitle: '', goalTarget: '' 
-            });
-
-            useEffect(() => {
-                // Efeito de estrelas
-                const container = document.getElementById('stars');
-                if (container && container.innerHTML === '') {
-                    for (let i = 0; i < 30; i++) {
-                        const star = document.createElement('div');
-                        star.className = 'star';
-                        star.style.width = Math.random() * 2 + 1 + 'px';
-                        star.style.height = star.style.width;
-                        star.style.top = Math.random() * 100 + '%';
-                        star.style.left = Math.random() * 100 + '%';
-                        star.style.setProperty('--duration', (Math.random() * 3 + 2) + 's');
-                        container.appendChild(star);
-                    }
-                }
-
-                const unsubscribe = auth.onAuthStateChanged(async (u) => {
-                    if (u) {
-                        try {
-                            const accessRef = publicDoc.collection('settings').doc('access');
-                            const doc = await accessRef.get();
-                            let emails = doc.exists ? (doc.data().emails || []).map(e => e.toLowerCase()) : [];
-
-                            if (emails.length === 0) {
-                                // Primeiro acesso, torna o usuário atual administrador
-                                await accessRef.set({ emails: [u.email.toLowerCase()] });
-                                emails = [u.email.toLowerCase()];
-                            }
-
-                            if (!emails.includes(u.email.toLowerCase())) {
-                                alert("Acesso não autorizado para: " + u.email);
-                                await auth.signOut();
-                                setUser(null);
-                                setScreen('auth');
-                            } else {
-                                setAllowedEmails(emails);
-                                setUser(u);
-                                setScreen('dashboard');
-                                startSync();
-                            }
-                        } catch (e) {
-                            console.error("Erro no Auth:", e);
-                            setUser(u);
-                            setScreen('dashboard');
-                            startSync();
-                        }
-                    } else {
-                        setUser(null);
-                        setScreen('auth');
-                    }
-                    setLoading(false);
-                });
-                return () => unsubscribe();
-            }, []);
-
-            const startSync = () => {
-                publicDoc.collection('transactions').orderBy('timestamp', 'desc').limit(50).onSnapshot(snap => {
-                    setTransactions(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-                });
-                publicDoc.collection('settings').doc('access').onSnapshot(doc => {
-                    if (doc.exists) setAllowedEmails(doc.data().emails || []);
-                });
-                publicDoc.collection('settings').doc('goal').onSnapshot(doc => {
-                    if (doc.exists) {
-                        const data = doc.data();
-                        setGoal(data);
-                        setFormData(prev => ({...prev, goalTitle: data.title, goalTarget: data.target}));
-                    }
-                });
-            };
-
-            const handleAuth = async (e) => {
-                e.preventDefault();
-                setLoading(true);
-                const emailClean = formData.email.trim().toLowerCase();
-                try {
-                    if (authMode === 'register') {
-                        await auth.createUserWithEmailAndPassword(emailClean, formData.password);
-                    } else if (authMode === 'login') {
-                        await auth.signInWithEmailAndPassword(emailClean, formData.password);
-                    } else {
-                        await auth.sendPasswordResetEmail(emailClean);
-                        alert("E-mail de recuperação enviado!");
-                        setAuthMode('login');
-                    }
-                } catch (err) { 
-                    alert("Erro: " + err.message); 
-                } finally { 
-                    setLoading(false); 
-                }
-            };
-
-            const addTransaction = async (e) => {
-                e.preventDefault();
-                if (!formData.desc || !formData.amount) return;
-                try {
-                    await publicDoc.collection('transactions').add({
-                        desc: formData.desc,
-                        amount: parseFloat(formData.amount),
-                        type: formData.type,
-                        category: formData.category,
-                        author: user.email,
-                        timestamp: Date.now(),
-                        date: new Date().toLocaleDateString('pt-BR')
-                    });
-                    setFormData({ ...formData, amount: '', desc: '', category: 'outro' });
-                    setScreen('dashboard');
-                } catch (e) { 
-                    alert("Erro ao salvar dados na nuvem."); 
-                }
-            };
-
-            const addAllowedUser = async (e) => {
-                e.preventDefault();
-                if (!formData.newUserEmail) return;
-                const newEmail = formData.newUserEmail.trim().toLowerCase();
-                if (allowedEmails.includes(newEmail)) return alert("Já autorizado.");
-                
-                try {
-                    const newList = [...allowedEmails, newEmail];
-                    await publicDoc.collection('settings').doc('access').set({ emails: newList });
-                    setFormData({ ...formData, newUserEmail: '' });
-                    alert("Novo tripulante autorizado!");
-                } catch (err) {
-                    alert("Erro ao atualizar lista.");
-                }
-            };
-
-            const deleteTransaction = async (id) => {
-                if (!confirm("Remover este registro permanentemente?")) return;
-                try {
-                    await publicDoc.collection('transactions').doc(id).delete();
-                } catch (e) { alert("Erro ao apagar."); }
-            };
-
-            const updateGoal = async (e) => {
-                e.preventDefault();
-                if (!formData.goalTitle || !formData.goalTarget) return;
-                try {
-                    await publicDoc.collection('settings').doc('goal').set({
-                        title: formData.goalTitle,
-                        target: parseFloat(formData.goalTarget)
-                    });
-                    alert("Objetivo Orbital Atualizado!");
-                } catch (err) { alert("Erro ao salvar meta."); }
-            };
-
-            const saldo = transactions.reduce((acc, t) => t.type === 'entrada' ? acc + t.amount : acc - t.amount, 0);
-            const totalSaidas = transactions.filter(t => t.type === 'saida').reduce((acc, t) => acc + t.amount, 0);
-            const progressoMeta = goal.target > 0 ? Math.min(Math.max((saldo / goal.target) * 100, 0), 100) : 0;
-
-            if (loading) return (
-                <div className="h-screen flex flex-col items-center justify-center">
-                    <div className="w-10 h-10 border-2 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-[10px] uppercase font-bold tracking-widest mt-4 text-sky-400">Iniciando Sistemas...</p>
+      <main className="px-6 space-y-6 max-w-2xl mx-auto">
+        {screen === 'dashboard' && (
+          <div className="space-y-6 animate-fadeIn">
+            {/* CARD DE SALDO */}
+            <div className="relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-950 p-8 rounded-[2rem] border border-white/10 shadow-2xl">
+              <div className="relative z-10">
+                <p className="text-[10px] font-black text-sky-400 uppercase tracking-[0.2em] mb-1">Saldo em Órbita</p>
+                <h3 className="text-4xl font-black tracking-tighter">
+                  R$ {totals.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </h3>
+                <div className="flex gap-4 mt-6">
+                  <div className="flex-1 bg-white/5 p-3 rounded-2xl border border-white/5">
+                    <p className="text-[8px] text-slate-500 font-bold uppercase">Entradas</p>
+                    <p className="text-emerald-400 font-bold text-sm">+{totals.in.toLocaleString('pt-BR')}</p>
+                  </div>
+                  <div className="flex-1 bg-white/5 p-3 rounded-2xl border border-white/5">
+                    <p className="text-[8px] text-slate-500 font-bold uppercase">Saídas</p>
+                    <p className="text-red-400 font-bold text-sm">-{totals.out.toLocaleString('pt-BR')}</p>
+                  </div>
                 </div>
-            );
+              </div>
+              <div className="absolute -right-4 -top-4 w-32 h-32 bg-sky-500/10 blur-3xl rounded-full"></div>
+            </div>
 
-            if (screen === 'auth') return (
-                <div className="min-h-screen flex items-center justify-center p-6">
-                    <div className="glass-card w-full max-w-sm p-8 fade-in">
-                        <div className="text-center mb-10">
-                            <h1 className="text-4xl font-black italic tracking-tighter">LUNAR <span className="text-sky-400">PRO</span></h1>
-                            <p className="text-slate-500 text-[9px] uppercase tracking-widest font-bold mt-2 italic">Acesso Restrito</p>
-                        </div>
-                        <form onSubmit={handleAuth} className="space-y-4">
-                            <input type="email" required placeholder="Teu E-mail" className="w-full lunar-input rounded-2xl p-4 text-sm font-medium" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
-                            {authMode !== 'reset' && <input type="password" required placeholder="Tua Senha" className="w-full lunar-input rounded-2xl p-4 text-sm font-medium" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} />}
-                            <button className="w-full bg-sky-500 text-white font-black py-4 rounded-2xl text-[11px] uppercase tracking-widest shadow-lg shadow-sky-500/20 active:scale-95 transition-all">
-                                {authMode === 'login' ? 'Iniciar Missão' : authMode === 'register' ? 'Criar Nova Nave' : 'Recuperar Senha'}
-                            </button>
-                        </form>
-                        <div className="mt-8 flex flex-col gap-2">
-                            <p className="text-center text-[10px] text-slate-500 font-black cursor-pointer uppercase tracking-tighter" onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}>
-                                {authMode === 'login' ? 'Ainda não tem acesso? Clique Aqui' : 'Já é tripulante? Faça Login'}
-                            </p>
-                            {authMode === 'login' && (
-                                <p className="text-center text-[9px] text-slate-600 font-bold cursor-pointer" onClick={() => setAuthMode('reset')}>Esqueceu a senha?</p>
-                            )}
-                        </div>
+            {/* LISTA DE TRANSAÇÕES */}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center px-2">
+                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Logs de Atividade</h4>
+                <LucideIcon name="fa-history" className="text-slate-600 text-xs" />
+              </div>
+              {transactions.map(tx => (
+                <div key={tx.id} className="bg-slate-900/40 backdrop-blur-md p-4 rounded-2xl border border-white/5 flex items-center justify-between group">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm ${tx.type === 'entrada' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                      <LucideIcon name={tx.type === 'entrada' ? 'fa-arrow-up' : 'fa-arrow-down'} />
                     </div>
+                    <div>
+                      <p className="text-sm font-bold leading-none mb-1">{tx.desc}</p>
+                      <p className="text-[9px] text-slate-500 font-bold uppercase italic">{new Date(tx.timestamp).toLocaleDateString()} • {tx.userEmail.split('@')[0]}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className={`text-sm font-black ${tx.type === 'entrada' ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {tx.type === 'entrada' ? '' : '-'}R$ {tx.amount.toLocaleString('pt-BR')}
+                    </span>
+                    <button onClick={() => deleteTx(tx.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-slate-600 hover:text-red-500">
+                      <LucideIcon name="fa-trash" className="text-xs" />
+                    </button>
+                  </div>
                 </div>
-            );
+              ))}
+            </div>
+          </div>
+        )}
 
-            return (
-                <div className="min-h-screen max-w-lg mx-auto pb-32 px-4 pt-8 fade-in">
-                    <header className="flex justify-between items-center mb-6 px-2">
-                        <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 bg-gradient-to-tr from-sky-600 to-sky-400 rounded-xl flex items-center justify-center text-white shadow-lg">
-                                <i className="fas fa-rocket text-sm"></i>
-                            </div>
-                            <div>
-                                <h2 className="text-md font-black italic uppercase leading-none">Lunar Pro</h2>
-                                <p className="text-slate-500 text-[8px] uppercase font-bold tracking-widest mt-1">Status: Online</p>
-                            </div>
-                        </div>
-                        <div className="text-right">
-                            <p className="text-slate-400 text-[10px] font-bold">{user.email.split('@')[0]}</p>
-                        </div>
-                    </header>
-
-                    <nav className="bottom-nav px-6">
-                        <button onClick={() => setScreen('dashboard')} className={`flex flex-col items-center gap-1 ${screen === 'dashboard' ? 'text-sky-400' : 'text-slate-500'}`}>
-                            <i className="fas fa-home-alt text-lg"></i>
-                            <span className="text-[9px] font-bold uppercase tracking-tighter">Início</span>
-                        </button>
-                        <button onClick={() => setScreen('add')} className="h-14 w-14 bg-sky-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-sky-500/30 -translate-y-6 border-4 border-[#020617] active:scale-90 transition-all">
-                            <i className="fas fa-plus text-xl"></i>
-                        </button>
-                        <button onClick={() => setScreen('profile')} className={`flex flex-col items-center gap-1 ${screen === 'profile' ? 'text-sky-400' : 'text-slate-500'}`}>
-                            <i className="fas fa-user-astronaut text-lg"></i>
-                            <span className="text-[9px] font-bold uppercase tracking-tighter">Painel</span>
-                        </button>
-                    </nav>
-
-                    {screen === 'dashboard' && (
-                        <div className="space-y-5 fade-in">
-                            <div className="glass-card p-6 bg-gradient-to-br from-slate-800/60 to-slate-900/80 border-sky-500/20 shadow-2xl">
-                                <span className="text-[8px] font-black text-sky-400 uppercase tracking-widest">Saldo Atual Disponível</span>
-                                <div className="text-3xl font-black mt-1 tracking-tighter">R$ {saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                                <div className="mt-4 pt-4 border-t border-white/5 flex justify-between">
-                                    <div>
-                                        <p className="text-[8px] text-slate-500 uppercase font-black">Gastos Totais</p>
-                                        <p className="text-sm font-bold text-red-400">R$ {totalSaidas.toLocaleString('pt-BR')}</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-[8px] text-slate-500 uppercase font-black">Progresso Meta: {progressoMeta.toFixed(0)}%</p>
-                                        <div className="w-20 h-1.5 bg-slate-800 rounded-full mt-1 overflow-hidden">
-                                            <div className="h-full bg-sky-400 transition-all duration-1000" style={{ width: `${progressoMeta}%` }}></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-3">
-                                <div className="flex justify-between items-center px-1">
-                                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Timeline de Lançamentos</h3>
-                                    <span className="text-[8px] text-slate-600 uppercase font-bold tracking-tighter">{transactions.length} Registros</span>
-                                </div>
-                                {transactions.length === 0 ? (
-                                    <div className="p-10 text-center text-slate-600 uppercase text-[10px] font-black tracking-widest">Sem lançamentos recentes</div>
-                                ) : transactions.map(t => (
-                                    <div key={t.id} className="glass-card p-4 flex justify-between items-center border-white/5 active:bg-white/5 transition-all">
-                                        <div className="flex items-center gap-4">
-                                            <div className={`h-10 w-10 rounded-2xl flex items-center justify-center text-sm ${t.type === 'entrada' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
-                                                <i className={`fas ${CATEGORIES.find(c => c.id === t.category)?.icon || 'fa-tag'}`}></i>
-                                            </div>
-                                            <div>
-                                                <p className="text-[13px] font-black leading-tight">{t.desc}</p>
-                                                <p className="text-[9px] text-slate-500 font-bold uppercase mt-0.5">{t.date} • {t.author?.split('@')[0]}</p>
-                                            </div>
-                                        </div>
-                                        <div className="text-right flex items-center gap-3">
-                                            <div className={`text-[13px] font-black ${t.type === 'entrada' ? 'text-emerald-400' : 'text-red-400'}`}>
-                                                {t.type === 'entrada' ? '+' : '-'} {t.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                            </div>
-                                            <button onClick={() => deleteTransaction(t.id)} className="h-8 w-8 text-slate-600 hover:text-red-500 transition-colors"><i className="fas fa-trash-alt"></i></button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {screen === 'add' && (
-                        <div className="space-y-6 fade-in px-1">
-                            <div className="glass-card p-6 border-sky-500/30 shadow-2xl">
-                                <h3 className="text-xs font-black mb-6 flex items-center gap-2 text-sky-400 uppercase tracking-widest"><i className="fas fa-plus-circle"></i> Novo Lançamento</h3>
-                                <form onSubmit={addTransaction} className="space-y-6">
-                                    <div className="flex bg-black/40 p-1.5 rounded-2xl border border-white/5">
-                                        <button type="button" onClick={() => setFormData({...formData, type: 'entrada'})} className={`flex-1 py-3 text-[10px] font-black rounded-xl transition-all ${formData.type === 'entrada' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-500'}`}>RECEITA</button>
-                                        <button type="button" onClick={() => setFormData({...formData, type: 'saida'})} className={`flex-1 py-3 text-[10px] font-black rounded-xl transition-all ${formData.type === 'saida' ? 'bg-red-500 text-white shadow-lg' : 'text-slate-500'}`}>DESPESA</button>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar">
-                                            {CATEGORIES.map(cat => (
-                                                <div key={cat.id} onClick={() => setFormData({...formData, category: cat.id})} className={`category-pill px-5 py-3 rounded-2xl border border-white/5 flex items-center gap-3 whitespace-nowrap text-[11px] font-black ${formData.category === cat.id ? 'active' : 'bg-white/5 text-slate-500'}`}>
-                                                    <i className={`fas ${cat.icon}`}></i> {cat.label}
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        <div className="space-y-3">
-                                            <input type="text" placeholder="O que você comprou/recebeu?" required className="w-full lunar-input rounded-2xl p-5 text-sm font-bold" value={formData.desc} onChange={(e) => setFormData({...formData, desc: e.target.value})} />
-                                            <input type="number" step="any" placeholder="Valor (R$)" required className="w-full lunar-input rounded-2xl p-5 text-sm font-bold" value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} />
-                                        </div>
-                                    </div>
-
-                                    <button type="submit" className="w-full bg-sky-500 text-white font-black py-5 rounded-2xl text-[12px] uppercase tracking-widest shadow-xl shadow-sky-500/20 active:scale-95 transition-all">Lançar na Nuvem</button>
-                                </form>
-                            </div>
-                        </div>
-                    )}
-
-                    {screen === 'profile' && (
-                        <div className="space-y-6 fade-in px-1">
-                            <div className="glass-card p-6 border-white/5">
-                                <h3 className="text-[10px] font-black mb-6 flex items-center gap-2 text-sky-400 uppercase tracking-widest"><i className="fas fa-bullseye"></i> Meta da Tripulação</h3>
-                                <form onSubmit={updateGoal} className="space-y-4">
-                                    <input type="text" placeholder="Nome do Objetivo" className="w-full lunar-input rounded-xl p-4 text-xs font-bold" value={formData.goalTitle} onChange={(e) => setFormData({...formData, goalTitle: e.target.value})} />
-                                    <input type="number" placeholder="Alvo Financeiro (R$)" className="w-full lunar-input rounded-xl p-4 text-xs font-bold" value={formData.goalTarget} onChange={(e) => setFormData({...formData, goalTarget: e.target.value})} />
-                                    <button type="submit" className="w-full bg-sky-500 text-white font-black py-4 rounded-xl text-[10px] uppercase shadow-lg shadow-sky-500/20">Atualizar Plano</button>
-                                </form>
-                            </div>
-
-                            <div className="glass-card p-6 border-white/5">
-                                <h3 className="text-[10px] font-black mb-4 text-sky-400 uppercase tracking-widest"><i className="fas fa-users-cog"></i> Tripulação Autorizada</h3>
-                                <div className="space-y-2 mb-6 max-h-40 overflow-y-auto no-scrollbar">
-                                    {allowedEmails.map(email => (
-                                        <div key={email} className="flex justify-between items-center bg-black/20 p-4 rounded-xl border border-white/5 text-[10px] font-bold">
-                                            <span className="truncate mr-2">{email}</span>
-                                            <i className="fas fa-shield-alt text-sky-500"></i>
-                                        </div>
-                                    ))}
-                                </div>
-                                <form onSubmit={addAllowedUser} className="flex gap-2">
-                                    <input type="email" placeholder="Novo E-mail" className="flex-1 lunar-input rounded-xl p-4 text-xs font-bold" value={formData.newUserEmail} onChange={(e) => setFormData({...formData, newUserEmail: e.target.value})} />
-                                    <button type="submit" className="bg-white text-black px-5 rounded-xl font-black text-[10px] active:scale-90 transition-all">ADD</button>
-                                </form>
-                            </div>
-
-                            <button onClick={() => auth.signOut()} className="w-full bg-red-500/10 text-red-400 font-black py-5 rounded-2xl text-[10px] uppercase tracking-widest border border-red-500/20 active:scale-95 transition-all">Ejetar do Sistema</button>
-                            <p className="text-center text-[8px] text-slate-700 font-bold uppercase tracking-[0.2em]">Lunar Pro v2.1.0 • Stable</p>
-                        </div>
-                    )}
+        {screen === 'add' && (
+          <div className="animate-fadeIn">
+            <div className="bg-slate-900/80 p-8 rounded-[2rem] border border-sky-500/20 shadow-2xl">
+              <h3 className="text-sm font-black uppercase tracking-widest text-sky-400 mb-8 italic">Nova Entrada de Dados</h3>
+              <form onSubmit={handleTransaction} className="space-y-6">
+                <div className="flex p-1 bg-black/40 rounded-2xl border border-white/5">
+                  <button type="button" onClick={() => setType('entrada')} className={`flex-1 py-3 text-[10px] font-bold rounded-xl transition-all ${type === 'entrada' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-500'}`}>ENTRADA</button>
+                  <button type="button" onClick={() => setType('saida')} className={`flex-1 py-3 text-[10px] font-bold rounded-xl transition-all ${type === 'saida' ? 'bg-red-500 text-white shadow-lg' : 'text-slate-500'}`}>SAÍDA</button>
                 </div>
-            );
-        }
+                
+                <div className="space-y-4">
+                  <div className="group">
+                    <label className="text-[9px] font-black text-slate-500 uppercase ml-2 mb-1 block">Identificação do Lançamento</label>
+                    <input 
+                      type="text" 
+                      placeholder="Ex: Aluguel, Mercado, Freelance..." 
+                      className="w-full bg-black/40 border border-white/10 p-5 rounded-2xl outline-none focus:border-sky-500 transition-all font-bold text-sm"
+                      value={desc}
+                      onChange={e => setDesc(e.target.value)}
+                    />
+                  </div>
+                  <div className="group">
+                    <label className="text-[9px] font-black text-slate-500 uppercase ml-2 mb-1 block">Valor Numérico (BRL)</label>
+                    <input 
+                      type="number" 
+                      placeholder="0,00" 
+                      className="w-full bg-black/40 border border-white/10 p-5 rounded-2xl outline-none focus:border-sky-500 transition-all font-bold text-lg text-sky-400"
+                      value={amount}
+                      onChange={e => setAmount(e.target.value)}
+                    />
+                  </div>
+                </div>
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
-</body>
-</html>
+                <button type="submit" className="w-full bg-sky-500 py-5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-sky-500/20 hover:bg-sky-400 transition-all active:scale-95">
+                  SINCRONIZAR COM A REDE
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {screen === 'profile' && (
+          <div className="space-y-6 animate-fadeIn">
+            <div className="bg-slate-900/50 p-6 rounded-3xl border border-white/10">
+              <h3 className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-4 italic">Segurança & Compartilhamento</h3>
+              <p className="text-xs text-slate-400 leading-relaxed mb-6">
+                Este sistema utiliza criptografia de ponta a ponta via Firebase. Seus dados são sincronizados em milissegundos com todos os membros da família autorizados.
+              </p>
+              <div className="p-4 bg-sky-500/10 border border-sky-500/20 rounded-2xl">
+                <div className="flex items-center gap-3">
+                  <LucideIcon name="fa-fingerprint" className="text-sky-400" />
+                  <span className="text-[10px] font-bold uppercase">ID da Sessão: {appId}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* TAB BAR */}
+      <nav className="fixed bottom-0 left-0 right-0 h-20 bg-slate-950/80 backdrop-blur-2xl border-t border-white/10 flex justify-around items-center px-8 z-50">
+        <button onClick={() => setScreen('dashboard')} className={`flex flex-col items-center gap-1 transition-all ${screen === 'dashboard' ? 'text-sky-400 scale-110' : 'text-slate-600'}`}>
+          <LucideIcon name="fa-th-large" className="text-lg" />
+          <span className="text-[8px] font-black uppercase">Home</span>
+        </button>
+        <button onClick={() => setScreen('add')} className="w-14 h-14 bg-sky-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-sky-500/30 -translate-y-6 border-4 border-[#020617] active:scale-90 transition-all">
+          <LucideIcon name="fa-plus" className="text-xl" />
+        </button>
+        <button onClick={() => setScreen('profile')} className={`flex flex-col items-center gap-1 transition-all ${screen === 'profile' ? 'text-sky-400 scale-110' : 'text-slate-600'}`}>
+          <LucideIcon name="fa-shield-alt" className="text-lg" />
+          <span className="text-[8px] font-black uppercase">Admin</span>
+        </button>
+      </nav>
+
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+      `}</style>
+    </div>
+  );
+}
 
 ```
