@@ -1,418 +1,457 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-import { 
-  getFirestore, 
-  collection, 
-  addDoc, 
-  deleteDoc, 
-  doc, 
-  onSnapshot, 
-  Timestamp 
-} from 'firebase/firestore';
-import { 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  AreaChart,
-  Area
-} from 'recharts';
-import { 
-  TrendingUp, 
-  Target, 
-  ArrowUpCircle, 
-  ArrowDownCircle, 
-  Trash2, 
-  Wallet,
-  AlertTriangle,
-  CheckCircle2,
-  Calendar,
-  Zap,
-  BarChart3
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trader Pro | Sistema de Gestão de Alavancagem</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 
-// --- CONFIGURAÇÃO FIREBASE ---
-const firebaseConfig = {
-  apiKey: "AIzaSyA-u9ii8P_ril727CzvAtIVFKU76TrcHzg",
-  authDomain: "planilha-a251b.firebaseapp.com",
-  projectId: "planilha-a251b",
-  storageBucket: "planilha-a251b.firebasestorage.app",
-  messagingSenderId: "1003937015443",
-  appId: "1:1003937015443:web:cf65009507e29a32fa4f66",
-  measurementId: "G-R8QPBLBNHC"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const appId = "alavancagem-20k";
-
-export default function App() {
-  const [user, setUser] = useState(null);
-  const [entries, setEntries] = useState([]);
-  const [amount, setAmount] = useState('');
-  const [isWin, setIsWin] = useState(true);
-  const [loading, setLoading] = useState(true);
-
-  const BANCA_INICIAL = 200;
-  const META_FINAL = 20000;
-
-  useEffect(() => {
-    signInAnonymously(auth).catch(console.error);
-    const unsubscribeAuth = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setLoading(false);
-    });
-    return () => unsubscribeAuth();
-  }, []);
-
-  useEffect(() => {
-    if (!user) return;
-    const q = collection(db, 'artifacts', appId, 'public', 'data', 'bets');
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      setEntries(data.sort((a, b) => a.createdAt?.seconds - b.createdAt?.seconds));
-    }, (error) => console.error("Firestore Error:", error));
-    return () => unsubscribe();
-  }, [user]);
-
-  const addEntry = async (e) => {
-    e.preventDefault();
-    if (!amount || !user) return;
-
-    try {
-      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'bets'), {
-        value: parseFloat(amount),
-        isWin,
-        createdAt: Timestamp.now(),
-        dateLabel: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-      });
-      setAmount('');
-    } catch (err) {
-      console.error("Erro ao adicionar:", err);
-    }
-  };
-
-  const deleteEntry = async (id) => {
-    try {
-      await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bets', id));
-    } catch (err) {
-      console.error("Erro ao eliminar:", err);
-    }
-  };
-
-  const bancaAtual = useMemo(() => {
-    return entries.reduce((acc, curr) => {
-      return curr.isWin ? acc + curr.value : acc - curr.value;
-    }, BANCA_INICIAL);
-  }, [entries]);
-
-  const progressData = useMemo(() => {
-    let current = BANCA_INICIAL;
-    return [
-      { name: 'Início', saldo: BANCA_INICIAL },
-      ...entries.map((e, i) => {
-        current = e.isWin ? current + e.value : current - e.value;
-        return { name: `Op ${i+1}`, saldo: current };
-      })
-    ];
-  }, [entries]);
-
-  const sugestaoAposta = (bancaAtual * 0.03).toFixed(2); 
-  const stopGainDiario = (bancaAtual * 0.10).toFixed(2); 
-  const stopLossDiario = (bancaAtual * 0.05).toFixed(2); 
-
-  const porcentagemConcluida = Math.min((bancaAtual / META_FINAL) * 100, 100).toFixed(2);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
-        <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-        <p className="mt-4 text-emerald-500 font-bold tracking-widest animate-pulse">SINCRONIZANDO BANCA...</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-[#050505] text-slate-200 font-sans selection:bg-emerald-500 selection:text-white">
-      {/* Barra de Progresso Superior */}
-      <div className="h-1 w-full bg-slate-900 sticky top-0 z-50">
-        <div 
-          className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-1000 shadow-[0_0_15px_rgba(16,185,129,0.5)]"
-          style={{ width: `${porcentagemConcluida}%` }}
-        ></div>
-      </div>
-
-      <div className="max-w-7xl mx-auto p-4 md:p-8">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap');
         
-        {/* Header Estilo Dashboard Elite */}
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Zap className="text-emerald-500 fill-emerald-500" size={20} />
-              <h1 className="text-2xl md:text-4xl font-black tracking-tighter text-white uppercase italic italic">
-                LUNAR <span className="text-emerald-500">PRO</span>
-              </h1>
-            </div>
-            <p className="text-slate-500 text-[10px] font-bold tracking-[0.2em] uppercase">Gestão de Elite • Alavancagem 20k</p>
-          </div>
-          
-          <div className="flex items-center gap-3 bg-slate-900/40 border border-slate-800 p-2 rounded-2xl backdrop-blur-md">
-            <div className="p-3 bg-emerald-500/10 rounded-xl">
-              <BarChart3 className="text-emerald-500" size={24} />
-            </div>
-            <div className="pr-4">
-              <p className="text-[10px] text-slate-500 font-bold uppercase">Progresso</p>
-              <p className="text-xl font-black text-white">{porcentagemConcluida}%</p>
-            </div>
-          </div>
-        </header>
+        :root {
+            --primary: #3b82f6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg-dark: #0f172a;
+        }
 
-        {/* Cartões de Monitorização */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-          <StatCard 
-            title="Banca Atual" 
-            value={`R$ ${bancaAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-            icon={<Wallet size={20} />}
-            color="emerald"
-          />
-          <StatCard 
-            title="Sugestão Entrada" 
-            value={`R$ ${sugestaoAposta}`}
-            subtitle="3% de Segurança"
-            icon={<Target size={20} />}
-            color="cyan"
-          />
-          <StatCard 
-            title="Meta Diária (Stop)" 
-            value={`R$ ${stopGainDiario}`}
-            subtitle="Alvo de 10%"
-            icon={<ArrowUpCircle size={20} />}
-            color="amber"
-          />
-          <StatCard 
-            title="Limite Perda" 
-            value={`R$ ${stopLossDiario}`}
-            subtitle="Segurança 5%"
-            icon={<ArrowDownCircle size={20} />}
-            color="rose"
-          />
-        </div>
+        body { 
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: #f8fafc;
+            -webkit-font-smoothing: antialiased;
+        }
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* Gráfico de Performance - Lado Esquerdo */}
-          <div className="lg:col-span-8 space-y-8">
-            <div className="bg-[#0f0f0f] border border-slate-800/50 rounded-[2.5rem] p-6 md:p-8 shadow-2xl relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-8 opacity-5">
-                <TrendingUp size={120} />
-              </div>
-              <h3 className="text-lg font-bold mb-8 flex items-center gap-3 text-white">
-                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
-                Performance da Banca
-              </h3>
-              <div className="h-[350px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={progressData}>
-                    <defs>
-                      <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} opacity={0.3} />
-                    <XAxis dataKey="name" hide />
-                    <YAxis 
-                      stroke="#475569" 
-                      fontSize={10} 
-                      tickLine={false} 
-                      axisLine={false} 
-                      tickFormatter={(v) => `R$${v}`}
-                    />
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: '#000', border: '1px solid #334155', borderRadius: '16px', fontSize: '12px' }}
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="saldo" 
-                      stroke="#10b981" 
-                      strokeWidth={4} 
-                      fillOpacity={1} 
-                      fill="url(#chartGradient)" 
-                      animationDuration={2000}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+        .mono { font-family: 'JetBrains Mono', monospace; }
 
-            {/* Painel de Operação */}
-            <div className="bg-gradient-to-br from-slate-900 to-black border border-slate-800 rounded-[2.5rem] p-6 md:p-8 shadow-xl">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Registrar Operação</h3>
-                <span className="text-[10px] font-bold text-slate-500 tracking-widest bg-slate-800 px-3 py-1 rounded-full">BACCARAT / CASINO</span>
-              </div>
-              
-              <form onSubmit={addEntry} className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                <div className="md:col-span-5 relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold">R$</span>
-                  <input 
-                    type="number" 
-                    step="0.01"
-                    placeholder="Valor Ganho ou Perdido"
-                    className="w-full bg-black/40 border border-slate-800 rounded-2xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-white font-bold"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    required
-                  />
-                </div>
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .input-field {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s ease;
+        }
+
+        .input-field:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+            outline: none;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- Firebase SDKs as Modules -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, collection, addDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyA-u9ii8P_ril727CzvAtIVFKU76TrcHzg",
+            authDomain: "planilha-a251b.firebaseapp.com",
+            projectId: "planilha-a251b",
+            storageBucket: "planilha-a251b.firebasestorage.app",
+            messagingSenderId: "1003937015443",
+            appId: "1:1003937015443:web:2e151fa65c4c9091fa4f66",
+            measurementId: "G-EJYQ0WSHM1"
+        };
+
+        // Inicialização
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // Disponibilizar para o Babel/React
+        window.FirebaseDB = { db, doc, onSnapshot, setDoc, updateDoc, collection, addDoc, deleteDoc, query, orderBy };
+        window.FirebaseAuth = { auth, signInAnonymously, onAuthStateChanged };
+    </script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+        const { db, doc, onSnapshot, setDoc, updateDoc, collection, addDoc, deleteDoc, query, orderBy } = window.FirebaseDB || {};
+        const { auth, signInAnonymously, onAuthStateChanged } = window.FirebaseAuth || {};
+
+        function App() {
+            const [user, setUser] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [authError, setAuthError] = useState(null);
+            const [isEditingProfile, setIsEditingProfile] = useState(false);
+            const [inputValue, setInputValue] = useState('');
+            const [transactions, setTransactions] = useState([]);
+            const [profile, setProfile] = useState({ 
+                name: 'Trader Pro', 
+                target: 1000, 
+                initialBalance: 100,
+                riskPercent: 5
+            });
+
+            // Auth Effect
+            useEffect(() => {
+                if (!auth) return;
                 
-                <div className="md:col-span-4 flex p-1 bg-black/40 border border-slate-800 rounded-2xl">
-                  <button 
-                    type="button"
-                    onClick={() => setIsWin(true)}
-                    className={`flex-1 flex items-center justify-center gap-2 rounded-xl font-black text-xs transition-all ${isWin ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
-                  >
-                    <ArrowUpCircle size={16} /> WIN
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => setIsWin(false)}
-                    className={`flex-1 flex items-center justify-center gap-2 rounded-xl font-black text-xs transition-all ${!isWin ? 'bg-rose-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
-                  >
-                    <ArrowDownCircle size={16} /> LOSS
-                  </button>
-                </div>
+                const unsubscribe = onAuthStateChanged(auth, (u) => {
+                    if (u) {
+                        setUser(u);
+                    } else {
+                        signInAnonymously(auth).catch(err => {
+                            console.error(err);
+                            setAuthError("Erro de Autenticação. Verifique se o 'Acesso Anônimo' está ativo no Firebase.");
+                            setLoading(false);
+                        });
+                    }
+                });
+                return () => unsubscribe();
+            }, []);
 
-                <button 
-                  type="submit"
-                  className="md:col-span-3 bg-white text-black font-black py-4 rounded-2xl hover:bg-emerald-400 hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-tighter text-sm"
-                >
-                  Confirmar
-                </button>
-              </form>
-            </div>
-          </div>
+            // Data Sync Effect
+            useEffect(() => {
+                if (!user || !db) return;
 
-          {/* Sidebar - Lado Direito */}
-          <div className="lg:col-span-4 space-y-6">
-            
-            {/* Aviso de Disciplina */}
-            <div className="bg-amber-500/5 border border-amber-500/20 p-5 rounded-3xl group">
-              <div className="flex gap-4">
-                <div className="bg-amber-500/20 p-2 rounded-lg h-fit group-hover:rotate-12 transition-transform">
-                  <AlertTriangle className="text-amber-500" size={20} />
-                </div>
-                <div>
-                  <p className="text-amber-500 font-black text-xs uppercase tracking-widest">Disciplina é Lucro</p>
-                  <p className="text-[10px] text-slate-400 leading-relaxed mt-1 font-medium">
-                    Gabriel, o mercado tira de quem tem pressa e dá para quem tem paciência. Bateu o <span className="text-amber-400">Stop Gain</span>? Sai do jogo imediatamente.
-                  </p>
-                </div>
-              </div>
-            </div>
+                const pRef = doc(db, 'users_data', user.uid, 'settings', 'profile');
+                const tRef = collection(db, 'users_data', user.uid, 'transactions');
+                const q = query(tRef, orderBy('timestamp', 'desc'));
 
-            {/* Histórico Recente */}
-            <div className="bg-[#0f0f0f] border border-slate-800 rounded-[2.5rem] overflow-hidden flex flex-col h-[520px]">
-              <div className="p-6 border-b border-slate-800/50 flex justify-between items-center bg-black/20">
-                <h4 className="font-black text-xs uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
-                  <Calendar size={14} className="text-emerald-500" /> Atividade Recente
-                </h4>
-                <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                {entries.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-slate-700 space-y-2">
-                    <Zap size={32} opacity={0.1} />
-                    <p className="text-[10px] uppercase font-bold tracking-widest italic text-center px-10">Aguardando primeira operação da sessão...</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {[...entries].reverse().map((entry) => (
-                      <div key={entry.id} className="bg-slate-900/30 border border-slate-800/50 p-4 rounded-2xl flex justify-between items-center group hover:border-slate-700 transition-all">
-                        <div className="flex items-center gap-4">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${entry.isWin ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
-                            {entry.isWin ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
-                          </div>
-                          <div>
-                            <p className={`text-base font-black ${entry.isWin ? 'text-emerald-400' : 'text-rose-400'}`}>
-                              {entry.isWin ? '+' : '-'} R$ {entry.value.toFixed(2)}
-                            </p>
-                            <p className="text-[9px] text-slate-500 font-bold uppercase tracking-tighter">{entry.dateLabel} • SUCESSO</p>
-                          </div>
+                // Sync Profile
+                const unsubP = onSnapshot(pRef, (s) => {
+                    if (s.exists()) {
+                        setProfile(s.data());
+                    } else {
+                        setDoc(pRef, profile);
+                    }
+                });
+
+                // Sync Transactions
+                const unsubT = onSnapshot(q, (s) => {
+                    const data = s.docs.map(d => ({id: d.id, ...d.data()}));
+                    setTransactions(data);
+                    setLoading(false);
+                });
+
+                return () => { unsubP(); unsubT(); };
+            }, [user]);
+
+            // Calculations
+            const stats = useMemo(() => {
+                const totalProfit = transactions.filter(t => t.type === 'profit').reduce((a, b) => a + b.amount, 0);
+                const totalLoss = transactions.filter(t => t.type === 'loss').reduce((a, b) => a + b.amount, 0);
+                const currentBalance = profile.initialBalance + totalProfit - totalLoss;
+                const suggestedEntry = (currentBalance * (profile.riskPercent / 100));
+                const progress = Math.min(((currentBalance - profile.initialBalance) / (profile.target - profile.initialBalance)) * 100, 100);
+                const isStopGain = currentBalance >= profile.target;
+                
+                return { currentBalance, suggestedEntry, progress, isStopGain, totalProfit, totalLoss };
+            }, [transactions, profile]);
+
+            const handleTrans = async (type, manualAmount = null) => {
+                const amount = manualAmount !== null ? parseFloat(manualAmount) : stats.suggestedEntry;
+                if (isNaN(amount) || amount <= 0 || !user) return;
+
+                try {
+                    await addDoc(collection(db, 'users_data', user.uid, 'transactions'), {
+                        amount, 
+                        type, 
+                        timestamp: Date.now()
+                    });
+                    setInputValue('');
+                } catch (err) {
+                    alert("Erro ao salvar transação: " + err.message);
+                }
+            };
+
+            const saveProfile = async () => {
+                if (!user) return;
+                try {
+                    await updateDoc(doc(db, 'users_data', user.uid, 'settings', 'profile'), profile);
+                    setIsEditingProfile(false);
+                } catch (err) {
+                    alert("Erro ao salvar perfil: " + err.message);
+                }
+            };
+
+            if (authError) return (
+                <div className="h-screen flex flex-col items-center justify-center p-6 text-center">
+                    <div className="text-rose-500 mb-4"><i data-lucide="alert-circle" size="48"></i></div>
+                    <h2 className="text-xl font-bold mb-2">Erro de Configuração</h2>
+                    <p className="text-slate-400 max-w-md">{authError}</p>
+                </div>
+            );
+
+            if (loading) return (
+                <div className="h-screen flex flex-col items-center justify-center space-y-4">
+                    <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-slate-400 font-medium animate-pulse">Sincronizando com a Nuvem...</p>
+                </div>
+            );
+
+            return (
+                <div className="min-h-screen p-4 md:p-8 max-w-6xl mx-auto space-y-6 animate-fade-in">
+                    {/* Header Section */}
+                    <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
+                        <div>
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-blue-500/20 rounded-lg">
+                                    <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                                </div>
+                                <h1 className="text-2xl font-extrabold tracking-tight text-white uppercase">
+                                    {profile.name}
+                                </h1>
+                            </div>
+                            <p className="text-xs text-slate-500 font-semibold tracking-widest mt-1 uppercase">Trading Dashboard Pro</p>
                         </div>
                         <button 
-                          onClick={() => deleteEntry(entry.id)}
-                          className="opacity-0 group-hover:opacity-100 p-2 text-slate-600 hover:text-rose-500 transition-all hover:bg-rose-500/10 rounded-lg"
+                            onClick={() => setIsEditingProfile(!isEditingProfile)}
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all text-xs font-bold"
                         >
-                          <Trash2 size={16} />
+                            {isEditingProfile ? "CANCELAR" : "CONFIGURAÇÕES"}
                         </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              
-              <div className="p-6 bg-black/40 border-t border-slate-800/50">
-                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-[0.2em]">
-                  <span className="text-slate-500 italic">Meta Final</span>
-                  <span className="text-emerald-500">R$ 20.000,00</span>
+                    </header>
+
+                    {/* Main Stats Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Balance Card */}
+                        <div className="lg:col-span-2 glass-card rounded-[2rem] p-8 relative overflow-hidden">
+                            <div className="relative z-10">
+                                <p className="text-sm font-medium text-slate-400 mb-1">Saldo Atual</p>
+                                <h2 className={`text-5xl font-black mono ${stats.currentBalance >= profile.initialBalance ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                    R$ {stats.currentBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </h2>
+                                
+                                <div className="mt-8 grid grid-cols-2 md:grid-cols-3 gap-6">
+                                    <div>
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Meta</p>
+                                        <p className="text-lg font-bold text-blue-400 mono">R$ {profile.target.toFixed(2)}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Banca Inicial</p>
+                                        <p className="text-lg font-bold text-slate-300 mono">R$ {profile.initialBalance.toFixed(2)}</p>
+                                    </div>
+                                    <div className="hidden md:block">
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Resultado %</p>
+                                        <p className={`text-lg font-bold mono ${stats.currentBalance >= profile.initialBalance ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                            {(((stats.currentBalance - profile.initialBalance) / profile.initialBalance) * 100).toFixed(2)}%
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Progress Bar */}
+                                <div className="mt-8">
+                                    <div className="flex justify-between text-[10px] font-bold uppercase mb-2">
+                                        <span className="text-slate-500">Progresso da Meta</span>
+                                        <span className="text-blue-400">{stats.progress.toFixed(1)}%</span>
+                                    </div>
+                                    <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                                        <div 
+                                            className="h-full bg-gradient-to-r from-blue-600 to-indigo-400 transition-all duration-1000 ease-out"
+                                            style={{ width: `${stats.progress}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
+                            </div>
+                            {/* Decorative background element */}
+                            <div className="absolute -right-10 -top-10 w-40 h-40 bg-blue-500/10 blur-[80px] rounded-full"></div>
+                        </div>
+
+                        {/* Suggested Entry Card */}
+                        <div className="glass-card rounded-[2rem] p-8 flex flex-col justify-between border-blue-500/20">
+                            <div>
+                                <div className="flex items-center gap-2 mb-4">
+                                    <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 20 20"/></svg>
+                                    </div>
+                                    <span className="text-sm font-bold text-indigo-300 uppercase tracking-wider">Entrada Sugerida</span>
+                                </div>
+                                <p className="text-4xl font-black mono text-white">
+                                    R$ {stats.suggestedEntry.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </p>
+                                <p className="text-xs text-slate-500 mt-2 font-medium">
+                                    Baseado em {profile.riskPercent}% de risco da banca atual.
+                                </p>
+                            </div>
+                            <button 
+                                onClick={() => handleTrans('profit')}
+                                className="mt-6 w-full py-4 rounded-2xl btn-primary font-black text-sm tracking-widest shadow-lg"
+                            >
+                                LANÇAR WIN SUGERIDO
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Controls & History */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Manual Entry Form */}
+                        <div className="lg:col-span-1 space-y-6">
+                            {isEditingProfile ? (
+                                <div className="glass-card rounded-[2rem] p-6 space-y-4 animate-fade-in">
+                                    <h3 className="text-sm font-bold uppercase tracking-widest text-blue-400 mb-2">Ajustes do Sistema</h3>
+                                    <div className="space-y-3">
+                                        <label className="block">
+                                            <span className="text-[10px] text-slate-500 font-bold uppercase ml-1">Nome do Trader</span>
+                                            <input className="w-full input-field p-3 rounded-xl text-sm font-bold" value={profile.name} onChange={e => setProfile({...profile, name: e.target.value})} />
+                                        </label>
+                                        <label className="block">
+                                            <span className="text-[10px] text-slate-500 font-bold uppercase ml-1">Banca Inicial (R$)</span>
+                                            <input type="number" className="w-full input-field p-3 rounded-xl text-sm font-bold mono" value={profile.initialBalance} onChange={e => setProfile({...profile, initialBalance: parseFloat(e.target.value) || 0})} />
+                                        </label>
+                                        <label className="block">
+                                            <span className="text-[10px] text-slate-500 font-bold uppercase ml-1">Meta de Ganho (R$)</span>
+                                            <input type="number" className="w-full input-field p-3 rounded-xl text-sm font-bold mono" value={profile.target} onChange={e => setProfile({...profile, target: parseFloat(e.target.value) || 0})} />
+                                        </label>
+                                        <label className="block">
+                                            <span className="text-[10px] text-slate-500 font-bold uppercase ml-1">Risco por Operação (%)</span>
+                                            <input type="number" className="w-full input-field p-3 rounded-xl text-sm font-bold mono" value={profile.riskPercent} onChange={e => setProfile({...profile, riskPercent: parseFloat(e.target.value) || 0})} />
+                                        </label>
+                                    </div>
+                                    <button onClick={saveProfile} className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl font-bold text-xs transition-colors mt-2">
+                                        SALVAR ALTERAÇÕES
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="glass-card rounded-[2rem] p-6">
+                                    <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">Lançamento Manual</h3>
+                                    <div className="space-y-4">
+                                        <input 
+                                            type="number" 
+                                            className="w-full input-field p-4 rounded-2xl text-lg font-bold mono text-center" 
+                                            placeholder="0,00" 
+                                            value={inputValue} 
+                                            onChange={e => setInputValue(e.target.value)} 
+                                        />
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button 
+                                                onClick={() => handleTrans('profit', inputValue)}
+                                                className="py-4 bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/30 text-emerald-400 hover:text-white rounded-2xl font-black text-xs transition-all"
+                                            >
+                                                WIN
+                                            </button>
+                                            <button 
+                                                onClick={() => handleTrans('loss', inputValue)}
+                                                className="py-4 bg-rose-600/20 hover:bg-rose-600 border border-rose-500/30 text-rose-400 hover:text-white rounded-2xl font-black text-xs transition-all"
+                                            >
+                                                LOSS
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Meta Alert */}
+                            {stats.isStopGain && (
+                                <div className="bg-emerald-500/10 border border-emerald-500/30 p-6 rounded-[2rem] flex items-center gap-4 text-emerald-400 animate-bounce">
+                                    <div className="text-2xl">🏆</div>
+                                    <div>
+                                        <p className="font-black text-xs uppercase tracking-widest">META ATINGIDA!</p>
+                                        <p className="text-[10px] font-bold opacity-70">Saia do mercado e proteja seu lucro.</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* History Table */}
+                        <div className="lg:col-span-2 glass-card rounded-[2rem] overflow-hidden flex flex-col">
+                            <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+                                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400">Histórico de Operações</h3>
+                                <span className="text-[10px] bg-slate-800 px-2 py-1 rounded text-slate-500 font-bold">{transactions.length} REGISTROS</span>
+                            </div>
+                            <div className="flex-1 overflow-y-auto max-h-[400px]">
+                                {transactions.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center py-20 text-slate-600">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mb-4 opacity-20"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+                                        <p className="text-xs font-bold uppercase tracking-widest">Nenhuma operação registrada</p>
+                                    </div>
+                                ) : (
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="text-[10px] text-slate-500 uppercase font-black border-b border-slate-800/50">
+                                                <th className="px-6 py-4">Horário</th>
+                                                <th className="px-6 py-4">Tipo</th>
+                                                <th className="px-6 py-4 text-right">Valor</th>
+                                                <th className="px-6 py-4 text-center">Ação</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-800/30">
+                                            {transactions.map(t => (
+                                                <tr key={t.id} className="hover:bg-white/5 transition-colors group">
+                                                    <td className="px-6 py-4 text-xs text-slate-400 mono">
+                                                        {new Date(t.timestamp).toLocaleTimeString('pt-BR')}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`text-[10px] font-black px-2 py-1 rounded ${t.type === 'profit' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                                                            {t.type === 'profit' ? 'WIN' : 'LOSS'}
+                                                        </span>
+                                                    </td>
+                                                    <td className={`px-6 py-4 text-sm font-bold text-right mono ${t.type === 'profit' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                        R$ {t.amount.toFixed(2)}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <button 
+                                                            onClick={() => deleteDoc(doc(db, 'users_data', user.uid, 'transactions', t.id))} 
+                                                            className="p-2 text-slate-700 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <footer className="text-center py-8">
+                        <p className="text-[10px] text-slate-600 font-bold tracking-[0.2em] uppercase">
+                            Trader Pro Management System &copy; 2024 • Cloud Sync Active
+                        </p>
+                    </footer>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Footer Minimalista */}
-      <footer className="mt-10 py-10 border-t border-slate-900 text-center">
-        <p className="text-[9px] text-slate-700 font-bold tracking-[0.5em] uppercase">
-          Lunar Beta System • Cloud Secure v2.0
-        </p>
-      </footer>
-    </div>
-  );
-}
+            );
+        }
 
-// Componente Auxiliar para os Cards de Estatística
-function StatCard({ title, value, icon, color, subtitle }) {
-  const colors = {
-    emerald: "border-emerald-500/50 text-emerald-400 bg-emerald-500/5 shadow-emerald-900/10",
-    cyan: "border-cyan-500/50 text-cyan-400 bg-cyan-500/5 shadow-cyan-900/10",
-    amber: "border-amber-500/50 text-amber-400 bg-amber-500/5 shadow-amber-900/10",
-    rose: "border-rose-500/50 text-rose-400 bg-rose-500/5 shadow-rose-900/10"
-  };
-
-  return (
-    <div className={`p-6 rounded-[2rem] border backdrop-blur-sm transition-all hover:scale-[1.02] ${colors[color]}`}>
-      <div className="flex justify-between items-center mb-3">
-        <span className="text-[10px] font-black uppercase tracking-widest opacity-70">{title}</span>
-        <div className="opacity-50">{icon}</div>
-      </div>
-      <p className="text-2xl font-black tracking-tighter text-white">{value}</p>
-      {subtitle && <p className="text-[9px] font-bold uppercase tracking-tight opacity-40 mt-1">{subtitle}</p>}
-    </div>
-  );
-}
-
-function TrendingDown({ size, className }) {
-  return (
-    <svg 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-      className={className}
-    >
-      <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
-      <polyline points="17 18 23 18 23 12"></polyline>
-    </svg>
-  );
-}
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
