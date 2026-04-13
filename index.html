@@ -2,8 +2,11 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trader Pro | Gestão de Risco & Alavancagem</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Trader Pro | Gestão de Elite</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -24,6 +27,7 @@
             --success: #10b981;
             --danger: #ef4444;
             --bg-dark: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
         }
 
         body { 
@@ -31,69 +35,78 @@
             background-color: var(--bg-dark);
             color: #f8fafc;
             -webkit-font-smoothing: antialiased;
+            overscroll-behavior-y: contain; /* Evita pull-to-refresh no mobile */
         }
 
         .mono { font-family: 'JetBrains Mono', monospace; }
 
+        /* Glassmorphism Pro */
         .glass-card {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            transition: all 0.2s ease;
+        /* Botões Mobile First */
+        .btn-action {
+            @apply active:scale-95 transition-all duration-150 select-none touch-manipulation;
+            height: 64px; /* Altura ideal para o polegar */
         }
 
-        .btn-primary:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        .btn-win {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
         }
 
-        .btn-danger {
+        .btn-loss {
             background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
         }
 
-        .input-field {
-            background: rgba(15, 23, 42, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.2s ease;
+        .btn-suggested {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
         }
 
-        .input-field:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-            outline: none;
+        /* Input Estilizado */
+        .input-pro {
+            background: rgba(15, 23, 42, 0.9);
+            border: 2px solid rgba(255, 255, 255, 0.05);
+            @apply focus:border-blue-500 focus:ring-0 outline-none transition-all text-center font-bold;
         }
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+        /* Animações */
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        .animate-slide-up { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
-        
-        .stop-loss-glow {
-            box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
-            border: 1px solid rgba(239, 68, 68, 0.5);
+        /* Scrollbar Invisível mas funcional */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Estilo para o Alerta de Stop Loss */
+        .stop-loss-active {
+            border: 2px solid #ef4444 !important;
+            animation: pulse-red 2s infinite;
+        }
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
     </style>
 </head>
-<body>
+<body class="no-scrollbar">
     <div id="root"></div>
 
-    <!-- Firebase SDKs as Modules -->
+    <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, collection, addDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, collection, addDoc, deleteDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = {
@@ -110,20 +123,19 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        window.FirebaseDB = { db, doc, onSnapshot, setDoc, updateDoc, collection, addDoc, deleteDoc, query, orderBy };
+        window.FirebaseDB = { db, doc, onSnapshot, setDoc, updateDoc, collection, addDoc, deleteDoc, query, orderBy, limit };
         window.FirebaseAuth = { auth, signInAnonymously, onAuthStateChanged };
     </script>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
-        const { db, doc, onSnapshot, setDoc, updateDoc, collection, addDoc, deleteDoc, query, orderBy } = window.FirebaseDB || {};
+        const { useState, useEffect, useMemo, useCallback } = React;
+        const { db, doc, onSnapshot, setDoc, updateDoc, collection, addDoc, deleteDoc, query, orderBy, limit } = window.FirebaseDB || {};
         const { auth, signInAnonymously, onAuthStateChanged } = window.FirebaseAuth || {};
 
         function App() {
             const [user, setUser] = useState(null);
             const [loading, setLoading] = useState(true);
-            const [authError, setAuthError] = useState(null);
-            const [isEditingProfile, setIsEditingProfile] = useState(false);
+            const [isEditing, setIsEditing] = useState(false);
             const [inputValue, setInputValue] = useState('');
             const [transactions, setTransactions] = useState([]);
             const [profile, setProfile] = useState({ 
@@ -131,28 +143,26 @@
                 target: 1000, 
                 initialBalance: 100,
                 riskPercent: 5,
-                stopLoss: 50 // Novo campo: Stop Loss Diário
+                stopLoss: 50
             });
 
-            // Auth Effect
+            // Persistência de Dados (Auth)
             useEffect(() => {
                 if (!auth) return;
                 const unsubscribe = onAuthStateChanged(auth, (u) => {
                     if (u) setUser(u);
-                    else signInAnonymously(auth).catch(err => {
-                        setAuthError("Erro de Autenticação. Verifique o Firebase.");
-                        setLoading(false);
-                    });
+                    else signInAnonymously(auth).catch(console.error);
                 });
                 return () => unsubscribe();
             }, []);
 
-            // Data Sync Effect
+            // Sincronização em Tempo Real
             useEffect(() => {
                 if (!user || !db) return;
+                
                 const pRef = doc(db, 'users_data', user.uid, 'settings', 'profile');
                 const tRef = collection(db, 'users_data', user.uid, 'transactions');
-                const q = query(tRef, orderBy('timestamp', 'desc'));
+                const q = query(tRef, orderBy('timestamp', 'desc'), limit(50));
 
                 const unsubP = onSnapshot(pRef, (s) => {
                     if (s.exists()) setProfile(s.data());
@@ -160,17 +170,15 @@
                 });
 
                 const unsubT = onSnapshot(q, (s) => {
-                    const data = s.docs.map(d => ({id: d.id, ...d.data()}));
-                    setTransactions(data);
+                    setTransactions(s.docs.map(d => ({id: d.id, ...d.data()})));
                     setLoading(false);
                 });
 
                 return () => { unsubP(); unsubT(); };
             }, [user]);
 
-            // Calculations
+            // Cálculos de Gestão
             const stats = useMemo(() => {
-                // Filtrar transações de hoje para o Stop Loss
                 const today = new Date().setHours(0,0,0,0);
                 const todayTrans = transactions.filter(t => t.timestamp >= today);
                 
@@ -188,21 +196,15 @@
                 const isStopGain = currentBalance >= profile.target;
                 const isStopLoss = dailyResult <= -(profile.stopLoss);
                 
-                const redCount = todayTrans.filter(t => t.type === 'loss').length;
-                const winCount = todayTrans.filter(t => t.type === 'profit').length;
-
                 return { 
                     currentBalance, suggestedEntry, progress, isStopGain, isStopLoss, 
-                    totalProfit, totalLoss, dailyResult, redCount, winCount 
+                    dailyResult, redCount: todayTrans.filter(t => t.type === 'loss').length,
+                    winCount: todayTrans.filter(t => t.type === 'profit').length
                 };
             }, [transactions, profile]);
 
-            const handleTrans = async (type, manualAmount = null) => {
-                if (stats.isStopLoss && type === 'loss') {
-                    alert("Você já atingiu o Stop Loss hoje! Proteja seu capital.");
-                }
-                
-                const amount = manualAmount !== null ? parseFloat(manualAmount) : stats.suggestedEntry;
+            const handleAction = useCallback(async (type, amountOverride = null) => {
+                const amount = amountOverride !== null ? parseFloat(amountOverride) : stats.suggestedEntry;
                 if (isNaN(amount) || amount <= 0 || !user) return;
 
                 try {
@@ -210,284 +212,178 @@
                         amount, type, timestamp: Date.now()
                     });
                     setInputValue('');
+                    // Feedback tátil (se disponível)
+                    if (window.navigator.vibrate) window.navigator.vibrate(50);
                 } catch (err) {
-                    alert("Erro ao salvar: " + err.message);
+                    alert("Erro ao salvar dados. Verifique sua conexão.");
                 }
-            };
-
-            const saveProfile = async () => {
-                if (!user) return;
-                try {
-                    await updateDoc(doc(db, 'users_data', user.uid, 'settings', 'profile'), profile);
-                    setIsEditingProfile(false);
-                } catch (err) {
-                    alert("Erro ao salvar perfil: " + err.message);
-                }
-            };
+            }, [user, stats.suggestedEntry]);
 
             if (loading) return (
-                <div className="h-screen flex flex-col items-center justify-center space-y-4">
-                    <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-slate-400 font-medium animate-pulse">Sincronizando Gestão...</p>
+                <div className="h-screen flex flex-col items-center justify-center bg-[#0f172a]">
+                    <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p className="text-blue-400 font-bold tracking-widest animate-pulse">CARREGANDO GESTÃO...</p>
                 </div>
             );
 
             return (
-                <div className="min-h-screen p-4 md:p-8 max-w-6xl mx-auto space-y-6 animate-fade-in">
-                    {/* Header Section */}
-                    <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
+                <div className="min-h-screen flex flex-col max-w-md mx-auto bg-[#0f172a] pb-10">
+                    {/* Header Mobile */}
+                    <header className="p-6 pt-10 flex justify-between items-center sticky top-0 z-50 bg-[#0f172a]/80 backdrop-blur-md">
                         <div>
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-blue-500/20 rounded-lg">
-                                    <div className={`w-3 h-3 rounded-full animate-pulse ${stats.isStopLoss ? 'bg-rose-500' : 'bg-blue-500'}`}></div>
-                                </div>
-                                <h1 className="text-2xl font-extrabold tracking-tight text-white uppercase">
-                                    {profile.name}
-                                </h1>
-                            </div>
-                            <p className="text-xs text-slate-500 font-semibold tracking-widest mt-1 uppercase">Controle de Risco Ativo</p>
+                            <h1 className="text-xl font-black text-white tracking-tighter uppercase flex items-center gap-2">
+                                <span className={`w-2 h-2 rounded-full ${stats.isStopLoss ? 'bg-red-500' : 'bg-emerald-500'} animate-pulse`}></span>
+                                {profile.name}
+                            </h1>
+                            <p className="text-[10px] text-slate-500 font-bold tracking-widest uppercase">Cloud Sync Ativo</p>
                         </div>
-                        <button 
-                            onClick={() => setIsEditingProfile(!isEditingProfile)}
-                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all text-xs font-bold"
-                        >
-                            {isEditingProfile ? "CANCELAR" : "AJUSTES"}
+                        <button onClick={() => setIsEditing(!isEditing)} className="p-3 bg-slate-800 rounded-2xl text-slate-400 active:bg-slate-700 transition-colors">
+                            <i data-lucide={isEditing ? "x" : "settings"} size="20"></i>
                         </button>
                     </header>
 
-                    {/* Alerts Section */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {stats.isStopLoss && (
-                            <div className="bg-rose-500/10 border border-rose-500/50 p-4 rounded-2xl flex items-center gap-4 text-rose-400 stop-loss-glow animate-bounce">
-                                <div className="text-2xl">🚫</div>
-                                <div>
-                                    <p className="font-black text-xs uppercase tracking-widest">STOP LOSS ATINGIDO!</p>
-                                    <p className="text-[10px] font-bold opacity-70 text-rose-300">Limite de R$ {profile.stopLoss} excedido. Pare agora!</p>
-                                </div>
-                            </div>
-                        )}
-                        {stats.isStopGain && (
-                            <div className="bg-emerald-500/10 border border-emerald-500/50 p-4 rounded-2xl flex items-center gap-4 text-emerald-400 animate-pulse">
-                                <div className="text-2xl">🏆</div>
-                                <div>
-                                    <p className="font-black text-xs uppercase tracking-widest">META ATINGIDA!</p>
-                                    <p className="text-[10px] font-bold opacity-70 text-emerald-300">Meta de R$ {profile.target} batida. Proteja o lucro!</p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Main Stats Grid */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Balance Card */}
-                        <div className="lg:col-span-2 glass-card rounded-[2rem] p-8 relative overflow-hidden">
+                    <main className="flex-1 px-6 space-y-6 animate-slide-up">
+                        {/* Card de Saldo Principal */}
+                        <div className={`glass-card rounded-[2.5rem] p-8 relative overflow-hidden ${stats.isStopLoss ? 'stop-loss-active' : ''}`}>
                             <div className="relative z-10">
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <p className="text-sm font-medium text-slate-400 mb-1">Saldo Atual</p>
-                                        <h2 className={`text-5xl font-black mono ${stats.currentBalance >= profile.initialBalance ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                            R$ {stats.currentBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                        </h2>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Resultado Diário</p>
-                                        <p className={`text-xl font-black mono ${stats.dailyResult >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                            {stats.dailyResult >= 0 ? '+' : ''}R$ {stats.dailyResult.toFixed(2)}
-                                        </p>
-                                    </div>
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Saldo Total</span>
+                                    <span className={`text-[10px] font-black px-2 py-1 rounded-full ${stats.dailyResult >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                                        HOJE: {stats.dailyResult >= 0 ? '+' : ''}R$ {stats.dailyResult.toFixed(2)}
+                                    </span>
                                 </div>
+                                <h2 className={`text-4xl font-black mono mb-6 ${stats.currentBalance >= profile.initialBalance ? 'text-emerald-400' : 'text-red-400'}`}>
+                                    R$ {stats.currentBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </h2>
                                 
-                                <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-6">
-                                    <div>
-                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Meta</p>
-                                        <p className="text-lg font-bold text-blue-400 mono">R$ {profile.target.toFixed(2)}</p>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-slate-900/50 p-3 rounded-2xl border border-white/5">
+                                        <p className="text-[9px] text-slate-500 font-bold uppercase mb-1">Meta</p>
+                                        <p className="text-sm font-bold text-blue-400 mono">R$ {profile.target.toFixed(2)}</p>
                                     </div>
-                                    <div>
-                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Stop Loss</p>
-                                        <p className="text-lg font-bold text-rose-500 mono">R$ {profile.stopLoss.toFixed(2)}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Wins Hoje</p>
-                                        <p className="text-lg font-bold text-emerald-500 mono">{stats.winCount}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Reds Hoje</p>
-                                        <p className="text-lg font-bold text-rose-500 mono">{stats.redCount}</p>
+                                    <div className="bg-slate-900/50 p-3 rounded-2xl border border-white/5">
+                                        <p className="text-[9px] text-slate-500 font-bold uppercase mb-1">Stop Loss</p>
+                                        <p className="text-sm font-bold text-red-500 mono">R$ {profile.stopLoss.toFixed(2)}</p>
                                     </div>
                                 </div>
 
-                                {/* Progress Bar */}
-                                <div className="mt-8">
-                                    <div className="flex justify-between text-[10px] font-bold uppercase mb-2">
-                                        <span className="text-slate-500">Progresso da Meta</span>
+                                {/* Barra de Progresso */}
+                                <div className="mt-6">
+                                    <div className="flex justify-between text-[9px] font-black uppercase mb-2">
+                                        <span className="text-slate-500">Progresso</span>
                                         <span className="text-blue-400">{stats.progress.toFixed(1)}%</span>
                                     </div>
-                                    <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-                                        <div 
-                                            className="h-full bg-gradient-to-r from-blue-600 to-indigo-400 transition-all duration-1000 ease-out"
-                                            style={{ width: `${stats.progress}%` }}
-                                        ></div>
+                                    <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                        <div className="h-full bg-blue-500 transition-all duration-1000" style={{ width: `${stats.progress}%` }}></div>
                                     </div>
                                 </div>
                             </div>
-                            <div className={`absolute -right-10 -top-10 w-40 h-40 blur-[80px] rounded-full ${stats.isStopLoss ? 'bg-rose-500/20' : 'bg-blue-500/10'}`}></div>
+                            <div className="absolute -right-10 -top-10 w-32 h-32 bg-blue-500/10 blur-[60px] rounded-full"></div>
                         </div>
 
-                        {/* Suggested Entry Card */}
-                        <div className={`glass-card rounded-[2rem] p-8 flex flex-col justify-between ${stats.isStopLoss ? 'border-rose-500/30' : 'border-blue-500/20'}`}>
-                            <div>
-                                <div className="flex items-center gap-2 mb-4">
-                                    <div className={`p-2 rounded-lg ${stats.isStopLoss ? 'bg-rose-500/20 text-rose-400' : 'bg-indigo-500/20 text-indigo-400'}`}>
-                                        <i data-lucide="target" size="20"></i>
+                        {/* Área de Operação */}
+                        {isEditing ? (
+                            <div className="glass-card rounded-[2.5rem] p-6 space-y-4 animate-slide-up">
+                                <h3 className="text-xs font-black uppercase tracking-widest text-blue-400 text-center">Configurações de Gestão</h3>
+                                <div className="space-y-3">
+                                    <input className="w-full input-pro p-4 rounded-2xl text-sm" placeholder="Nome do Trader" value={profile.name} onChange={e => setProfile({...profile, name: e.target.value})} />
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <input type="number" className="w-full input-pro p-4 rounded-2xl text-sm" placeholder="Banca" value={profile.initialBalance} onChange={e => setProfile({...profile, initialBalance: parseFloat(e.target.value) || 0})} />
+                                        <input type="number" className="w-full input-pro p-4 rounded-2xl text-sm" placeholder="Risco %" value={profile.riskPercent} onChange={e => setProfile({...profile, riskPercent: parseFloat(e.target.value) || 0})} />
                                     </div>
-                                    <span className="text-sm font-bold uppercase tracking-wider">Entrada Sugerida</span>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <input type="number" className="w-full input-pro p-4 rounded-2xl text-sm border-emerald-500/20" placeholder="Meta" value={profile.target} onChange={e => setProfile({...profile, target: parseFloat(e.target.value) || 0})} />
+                                        <input type="number" className="w-full input-pro p-4 rounded-2xl text-sm border-red-500/20" placeholder="Stop Loss" value={profile.stopLoss} onChange={e => setProfile({...profile, stopLoss: parseFloat(e.target.value) || 0})} />
+                                    </div>
                                 </div>
-                                <p className={`text-4xl font-black mono ${stats.isStopLoss ? 'text-slate-500 line-through' : 'text-white'}`}>
-                                    R$ {stats.suggestedEntry.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                </p>
-                                <p className="text-xs text-slate-500 mt-2 font-medium">
-                                    {stats.isStopLoss ? "Operações bloqueadas por Stop Loss." : `Risco de ${profile.riskPercent}% da banca.`}
-                                </p>
+                                <button onClick={() => { updateDoc(doc(db, 'users_data', user.uid, 'settings', 'profile'), profile); setIsEditing(false); }} className="w-full py-4 bg-blue-600 rounded-2xl font-black text-xs tracking-widest active:bg-blue-500 transition-colors">
+                                    SALVAR ALTERAÇÕES
+                                </button>
                             </div>
-                            <button 
-                                onClick={() => handleTrans('profit')}
-                                disabled={stats.isStopLoss}
-                                className={`mt-6 w-full py-4 rounded-2xl font-black text-sm tracking-widest shadow-lg transition-all ${stats.isStopLoss ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'btn-primary text-white'}`}
-                            >
-                                {stats.isStopLoss ? "STOP LOSS ATINGIDO" : "LANÇAR WIN SUGERIDO"}
-                            </button>
-                        </div>
-                    </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {/* Entrada Sugerida */}
+                                <div className="flex flex-col items-center justify-center py-4">
+                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2">Entrada Sugerida</span>
+                                    <div className="text-3xl font-black mono text-white">R$ {stats.suggestedEntry.toFixed(2)}</div>
+                                </div>
 
-                    {/* Controls & History */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Manual Entry Form */}
-                        <div className="lg:col-span-1 space-y-6">
-                            {isEditingProfile ? (
-                                <div className="glass-card rounded-[2rem] p-6 space-y-4 animate-fade-in">
-                                    <h3 className="text-sm font-bold uppercase tracking-widest text-blue-400 mb-2">Ajustes de Gestão</h3>
-                                    <div className="space-y-3">
-                                        <label className="block">
-                                            <span className="text-[10px] text-slate-500 font-bold uppercase ml-1">Nome do Trader</span>
-                                            <input className="w-full input-field p-3 rounded-xl text-sm font-bold" value={profile.name} onChange={e => setProfile({...profile, name: e.target.value})} />
-                                        </label>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <label className="block">
-                                                <span className="text-[10px] text-slate-500 font-bold uppercase ml-1">Banca (R$)</span>
-                                                <input type="number" className="w-full input-field p-3 rounded-xl text-sm font-bold mono" value={profile.initialBalance} onChange={e => setProfile({...profile, initialBalance: parseFloat(e.target.value) || 0})} />
-                                            </label>
-                                            <label className="block">
-                                                <span className="text-[10px] text-slate-500 font-bold uppercase ml-1">Risco (%)</span>
-                                                <input type="number" className="w-full input-field p-3 rounded-xl text-sm font-bold mono" value={profile.riskPercent} onChange={e => setProfile({...profile, riskPercent: parseFloat(e.target.value) || 0})} />
-                                            </label>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <label className="block">
-                                                <span className="text-[10px] text-emerald-500 font-bold uppercase ml-1">Meta (R$)</span>
-                                                <input type="number" className="w-full input-field p-3 rounded-xl text-sm font-bold mono border-emerald-500/20" value={profile.target} onChange={e => setProfile({...profile, target: parseFloat(e.target.value) || 0})} />
-                                            </label>
-                                            <label className="block">
-                                                <span className="text-[10px] text-rose-500 font-bold uppercase ml-1">Stop Loss (R$)</span>
-                                                <input type="number" className="w-full input-field p-3 rounded-xl text-sm font-bold mono border-rose-500/20" value={profile.stopLoss} onChange={e => setProfile({...profile, stopLoss: parseFloat(e.target.value) || 0})} />
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <button onClick={saveProfile} className="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold text-xs transition-colors mt-2">
-                                        SALVAR CONFIGURAÇÕES
+                                {/* Botões de Ação Grandes */}
+                                <div className="grid grid-cols-1 gap-3">
+                                    <button 
+                                        onClick={() => handleAction('profit')}
+                                        disabled={stats.isStopLoss}
+                                        className={`btn-action btn-suggested rounded-2xl font-black text-sm tracking-widest flex items-center justify-center gap-3 ${stats.isStopLoss ? 'opacity-20 grayscale cursor-not-allowed' : ''}`}
+                                    >
+                                        <i data-lucide="trending-up" size="20"></i> LANÇAR WIN SUGERIDO
                                     </button>
-                                </div>
-                            ) : (
-                                <div className="glass-card rounded-[2rem] p-6">
-                                    <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">Lançamento Manual</h3>
-                                    <div className="space-y-4">
-                                        <input 
-                                            type="number" 
-                                            className="w-full input-field p-4 rounded-2xl text-lg font-bold mono text-center" 
-                                            placeholder="0,00" 
-                                            value={inputValue} 
-                                            onChange={e => setInputValue(e.target.value)} 
+                                    
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button 
+                                            onClick={() => handleAction('profit', inputValue)}
                                             disabled={stats.isStopLoss}
-                                        />
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <button 
-                                                onClick={() => handleTrans('profit', inputValue)}
-                                                disabled={stats.isStopLoss}
-                                                className={`py-4 rounded-2xl font-black text-xs transition-all ${stats.isStopLoss ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/30 text-emerald-400 hover:text-white'}`}
-                                            >
-                                                WIN
-                                            </button>
-                                            <button 
-                                                onClick={() => handleTrans('loss', inputValue)}
-                                                disabled={stats.isStopLoss}
-                                                className={`py-4 rounded-2xl font-black text-xs transition-all ${stats.isStopLoss ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-rose-600/20 hover:bg-rose-600 border border-rose-500/30 text-rose-400 hover:text-white'}`}
-                                            >
-                                                LOSS (RED)
-                                            </button>
-                                        </div>
+                                            className={`btn-action btn-win rounded-2xl font-black text-sm tracking-widest flex items-center justify-center gap-2 ${stats.isStopLoss ? 'opacity-20 grayscale cursor-not-allowed' : ''}`}
+                                        >
+                                            WIN
+                                        </button>
+                                        <button 
+                                            onClick={() => handleAction('loss', inputValue)}
+                                            disabled={stats.isStopLoss}
+                                            className={`btn-action btn-loss rounded-2xl font-black text-sm tracking-widest flex items-center justify-center gap-2 ${stats.isStopLoss ? 'opacity-20 grayscale cursor-not-allowed' : ''}`}
+                                        >
+                                            RED
+                                        </button>
                                     </div>
                                 </div>
-                            )}
-                        </div>
 
-                        {/* History Table */}
-                        <div className="lg:col-span-2 glass-card rounded-[2rem] overflow-hidden flex flex-col">
-                            <div className="p-6 border-b border-slate-800 flex justify-between items-center">
-                                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400">Histórico de Hoje</h3>
+                                {/* Input Manual */}
+                                <input 
+                                    type="number" 
+                                    className="w-full input-pro p-5 rounded-2xl text-xl mb-4" 
+                                    placeholder="VALOR MANUAL" 
+                                    value={inputValue} 
+                                    onChange={e => setInputValue(e.target.value)}
+                                    disabled={stats.isStopLoss}
+                                />
+                            </div>
+                        )}
+
+                        {/* Histórico Simplificado Mobile */}
+                        <div className="glass-card rounded-[2.5rem] overflow-hidden">
+                            <div className="p-5 border-b border-white/5 flex justify-between items-center">
+                                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Histórico Recente</h3>
                                 <div className="flex gap-2">
-                                    <span className="text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded font-bold">{stats.winCount} WINS</span>
-                                    <span className="text-[10px] bg-rose-500/10 text-rose-500 px-2 py-1 rounded font-bold">{stats.redCount} REDS</span>
+                                    <span className="text-[9px] font-bold text-emerald-400">{stats.winCount}W</span>
+                                    <span className="text-[9px] font-bold text-red-400">{stats.redCount}R</span>
                                 </div>
                             </div>
-                            <div className="flex-1 overflow-y-auto max-h-[400px]">
+                            <div className="max-h-60 overflow-y-auto no-scrollbar">
                                 {transactions.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center py-20 text-slate-600">
-                                        <p className="text-xs font-bold uppercase tracking-widest">Aguardando operações...</p>
-                                    </div>
+                                    <div className="p-10 text-center text-[10px] font-bold text-slate-600 uppercase tracking-widest">Sem operações</div>
                                 ) : (
-                                    <table className="w-full text-left border-collapse">
-                                        <thead>
-                                            <tr className="text-[10px] text-slate-500 uppercase font-black border-b border-slate-800/50">
-                                                <th className="px-6 py-4">Horário</th>
-                                                <th className="px-6 py-4">Tipo</th>
-                                                <th className="px-6 py-4 text-right">Valor</th>
-                                                <th className="px-6 py-4 text-center">Ação</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-800/30">
-                                            {transactions.map(t => (
-                                                <tr key={t.id} className="hover:bg-white/5 transition-colors group">
-                                                    <td className="px-6 py-4 text-xs text-slate-400 mono">
-                                                        {new Date(t.timestamp).toLocaleTimeString('pt-BR')}
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <span className={`text-[10px] font-black px-2 py-1 rounded ${t.type === 'profit' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
-                                                            {t.type === 'profit' ? 'WIN' : 'RED'}
-                                                        </span>
-                                                    </td>
-                                                    <td className={`px-6 py-4 text-sm font-bold text-right mono ${t.type === 'profit' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                        R$ {t.amount.toFixed(2)}
-                                                    </td>
-                                                    <td className="px-6 py-4 text-center">
-                                                        <button 
-                                                            onClick={() => deleteDoc(doc(db, 'users_data', user.uid, 'transactions', t.id))} 
-                                                            className="p-2 text-slate-700 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100"
-                                                        >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                    <div className="divide-y divide-white/5">
+                                        {transactions.map(t => (
+                                            <div key={t.id} className="p-4 flex justify-between items-center active:bg-white/5 transition-colors">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${t.type === 'profit' ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
+                                                    <span className="text-[10px] text-slate-500 mono">{new Date(t.timestamp).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</span>
+                                                </div>
+                                                <span className={`text-sm font-bold mono ${t.type === 'profit' ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                    {t.type === 'profit' ? '+' : '-'} R$ {t.amount.toFixed(2)}
+                                                </span>
+                                                <button onClick={() => deleteDoc(doc(db, 'users_data', user.uid, 'transactions', t.id))} className="p-2 text-slate-700">
+                                                    <i data-lucide="trash-2" size="14"></i>
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
                                 )}
                             </div>
                         </div>
-                    </div>
-                    
-                    <footer className="text-center py-8">
-                        <p className="text-[10px] text-slate-600 font-bold tracking-[0.2em] uppercase">
-                            Trader Pro Gabriel rodrigues ; 2026 • Cloud Sync Active
-                        </p>
+                    </main>
+
+                    <footer className="p-8 text-center">
+                        <p className="text-[9px] text-slate-600 font-bold tracking-[0.3em] uppercase">Trader Pro Elite &copy; 2024</p>
                     </footer>
                 </div>
             );
@@ -495,9 +391,11 @@
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
-        // Initialize Lucide icons after render
-        setTimeout(() => lucide.createIcons(), 500);
+        // Initialize Lucide icons
+        const initIcons = () => { if(window.lucide) lucide.createIcons(); else setTimeout(initIcons, 100); };
+        initIcons();
     </script>
 </body>
 </html>
+
 
