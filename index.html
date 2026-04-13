@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -5,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Lunar PRO - Gestão de Elite</title>
     
-    <!-- Bibliotecas via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -50,31 +50,27 @@
             border: 1px solid rgba(255, 255, 255, 0.1); 
             transition: all 0.3s ease; 
             color: white; 
-            font-size: 16px !important; /* Evita zoom automático no iOS */
+            font-size: 16px !important;
         }
 
         .lunar-input:focus { border-color: var(--lunar-glow); outline: none; box-shadow: 0 0 15px rgba(56, 189, 248, 0.2); }
         
-        .fade-in { animation: fadeInUp 0.5s ease-out forwards; }
+        .fade-in { animation: fadeInUp 0.4s ease-out forwards; }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .progress-bar-inner { transition: width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
         
         .category-pill { transition: all 0.2s; cursor: pointer; flex-shrink: 0; }
         .category-pill.active { background: #38bdf8; color: #020617; transform: scale(1.05); }
 
-        /* Esconder scrollbar */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Navegação Inferior */
         .bottom-nav {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
             height: 75px;
-            background: rgba(15, 23, 42, 0.9);
+            background: rgba(15, 23, 42, 0.95);
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
             border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -131,6 +127,7 @@
             });
 
             useEffect(() => {
+                // Efeito de estrelas
                 const container = document.getElementById('stars');
                 if (container && container.innerHTML === '') {
                     for (let i = 0; i < 30; i++) {
@@ -147,27 +144,31 @@
 
                 const unsubscribe = auth.onAuthStateChanged(async (u) => {
                     if (u) {
-                        setUser(u);
                         try {
                             const accessRef = publicDoc.collection('settings').doc('access');
                             const doc = await accessRef.get();
                             let emails = doc.exists ? (doc.data().emails || []).map(e => e.toLowerCase()) : [];
 
-                            if (emails.length > 0 && !emails.includes(u.email.toLowerCase())) {
-                                alert("Acesso não autorizado.");
+                            if (emails.length === 0) {
+                                // Primeiro acesso, torna o usuário atual administrador
+                                await accessRef.set({ emails: [u.email.toLowerCase()] });
+                                emails = [u.email.toLowerCase()];
+                            }
+
+                            if (!emails.includes(u.email.toLowerCase())) {
+                                alert("Acesso não autorizado para: " + u.email);
                                 await auth.signOut();
                                 setUser(null);
                                 setScreen('auth');
                             } else {
-                                if (emails.length === 0) {
-                                    await accessRef.set({ emails: [u.email.toLowerCase()] }).catch(()=>{});
-                                    emails = [u.email.toLowerCase()];
-                                }
                                 setAllowedEmails(emails);
+                                setUser(u);
                                 setScreen('dashboard');
                                 startSync();
                             }
                         } catch (e) {
+                            console.error("Erro no Auth:", e);
+                            setUser(u);
                             setScreen('dashboard');
                             startSync();
                         }
@@ -188,7 +189,11 @@
                     if (doc.exists) setAllowedEmails(doc.data().emails || []);
                 });
                 publicDoc.collection('settings').doc('goal').onSnapshot(doc => {
-                    if (doc.exists) setGoal(doc.data());
+                    if (doc.exists) {
+                        const data = doc.data();
+                        setGoal(data);
+                        setFormData(prev => ({...prev, goalTitle: data.title, goalTarget: data.target}));
+                    }
                 });
             };
 
@@ -203,11 +208,14 @@
                         await auth.signInWithEmailAndPassword(emailClean, formData.password);
                     } else {
                         await auth.sendPasswordResetEmail(emailClean);
-                        alert("E-mail enviado!");
+                        alert("E-mail de recuperação enviado!");
                         setAuthMode('login');
                     }
-                } catch (err) { alert(err.message); }
-                finally { setLoading(false); }
+                } catch (err) { 
+                    alert("Erro: " + err.message); 
+                } finally { 
+                    setLoading(false); 
+                }
             };
 
             const addTransaction = async (e) => {
@@ -224,11 +232,30 @@
                         date: new Date().toLocaleDateString('pt-BR')
                     });
                     setFormData({ ...formData, amount: '', desc: '', category: 'outro' });
-                } catch (e) { alert("Erro ao salvar."); }
+                    setScreen('dashboard');
+                } catch (e) { 
+                    alert("Erro ao salvar dados na nuvem."); 
+                }
+            };
+
+            const addAllowedUser = async (e) => {
+                e.preventDefault();
+                if (!formData.newUserEmail) return;
+                const newEmail = formData.newUserEmail.trim().toLowerCase();
+                if (allowedEmails.includes(newEmail)) return alert("Já autorizado.");
+                
+                try {
+                    const newList = [...allowedEmails, newEmail];
+                    await publicDoc.collection('settings').doc('access').set({ emails: newList });
+                    setFormData({ ...formData, newUserEmail: '' });
+                    alert("Novo tripulante autorizado!");
+                } catch (err) {
+                    alert("Erro ao atualizar lista.");
+                }
             };
 
             const deleteTransaction = async (id) => {
-                if (!confirm("Remover este registo?")) return;
+                if (!confirm("Remover este registro permanentemente?")) return;
                 try {
                     await publicDoc.collection('transactions').doc(id).delete();
                 } catch (e) { alert("Erro ao apagar."); }
@@ -243,23 +270,23 @@
                         target: parseFloat(formData.goalTarget)
                     });
                     alert("Objetivo Orbital Atualizado!");
-                    setScreen('dashboard');
-                } catch (err) { alert("Erro."); }
+                } catch (err) { alert("Erro ao salvar meta."); }
             };
 
             const saldo = transactions.reduce((acc, t) => t.type === 'entrada' ? acc + t.amount : acc - t.amount, 0);
             const totalSaidas = transactions.filter(t => t.type === 'saida').reduce((acc, t) => acc + t.amount, 0);
-            const progressoMeta = Math.min(Math.max((saldo / goal.target) * 100, 0), 100);
+            const progressoMeta = goal.target > 0 ? Math.min(Math.max((saldo / goal.target) * 100, 0), 100) : 0;
 
             if (loading) return (
                 <div className="h-screen flex flex-col items-center justify-center">
                     <div className="w-10 h-10 border-2 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-[10px] uppercase font-bold tracking-widest mt-4 text-sky-400">Iniciando Sistemas...</p>
                 </div>
             );
 
             if (screen === 'auth') return (
                 <div className="min-h-screen flex items-center justify-center p-6">
-                    <div className="glass-card w-full max-w-sm p-8">
+                    <div className="glass-card w-full max-w-sm p-8 fade-in">
                         <div className="text-center mb-10">
                             <h1 className="text-4xl font-black italic tracking-tighter">LUNAR <span className="text-sky-400">PRO</span></h1>
                             <p className="text-slate-500 text-[9px] uppercase tracking-widest font-bold mt-2 italic">Acesso Restrito</p>
@@ -268,19 +295,23 @@
                             <input type="email" required placeholder="Teu E-mail" className="w-full lunar-input rounded-2xl p-4 text-sm font-medium" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
                             {authMode !== 'reset' && <input type="password" required placeholder="Tua Senha" className="w-full lunar-input rounded-2xl p-4 text-sm font-medium" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} />}
                             <button className="w-full bg-sky-500 text-white font-black py-4 rounded-2xl text-[11px] uppercase tracking-widest shadow-lg shadow-sky-500/20 active:scale-95 transition-all">
-                                {authMode === 'login' ? 'Iniciar Missão' : authMode === 'register' ? 'Criar Nova Nave' : 'Recuperar'}
+                                {authMode === 'login' ? 'Iniciar Missão' : authMode === 'register' ? 'Criar Nova Nave' : 'Recuperar Senha'}
                             </button>
                         </form>
-                        <p className="mt-8 text-center text-[10px] text-slate-500 font-black cursor-pointer uppercase tracking-tighter" onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}>
-                            {authMode === 'login' ? 'Ainda não tem acesso? Clique Aqui' : 'Já é tripulante? Faça Login'}
-                        </p>
+                        <div className="mt-8 flex flex-col gap-2">
+                            <p className="text-center text-[10px] text-slate-500 font-black cursor-pointer uppercase tracking-tighter" onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}>
+                                {authMode === 'login' ? 'Ainda não tem acesso? Clique Aqui' : 'Já é tripulante? Faça Login'}
+                            </p>
+                            {authMode === 'login' && (
+                                <p className="text-center text-[9px] text-slate-600 font-bold cursor-pointer" onClick={() => setAuthMode('reset')}>Esqueceu a senha?</p>
+                            )}
+                        </div>
                     </div>
                 </div>
             );
 
             return (
                 <div className="min-h-screen max-w-lg mx-auto pb-32 px-4 pt-8 fade-in">
-                    {/* Header Mobile Otimizado */}
                     <header className="flex justify-between items-center mb-6 px-2">
                         <div className="flex items-center gap-3">
                             <div className="h-10 w-10 bg-gradient-to-tr from-sky-600 to-sky-400 rounded-xl flex items-center justify-center text-white shadow-lg">
@@ -296,7 +327,6 @@
                         </div>
                     </header>
 
-                    {/* Bottom Nav */}
                     <nav className="bottom-nav px-6">
                         <button onClick={() => setScreen('dashboard')} className={`flex flex-col items-center gap-1 ${screen === 'dashboard' ? 'text-sky-400' : 'text-slate-500'}`}>
                             <i className="fas fa-home-alt text-lg"></i>
@@ -312,32 +342,32 @@
                     </nav>
 
                     {screen === 'dashboard' && (
-                        <div className="space-y-5">
-                            {/* Resumo Principal */}
+                        <div className="space-y-5 fade-in">
                             <div className="glass-card p-6 bg-gradient-to-br from-slate-800/60 to-slate-900/80 border-sky-500/20 shadow-2xl">
-                                <span className="text-[8px] font-black text-sky-400 uppercase tracking-widest">Saldo Disponível</span>
+                                <span className="text-[8px] font-black text-sky-400 uppercase tracking-widest">Saldo Atual Disponível</span>
                                 <div className="text-3xl font-black mt-1 tracking-tighter">R$ {saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                                 <div className="mt-4 pt-4 border-t border-white/5 flex justify-between">
                                     <div>
-                                        <p className="text-[8px] text-slate-500 uppercase font-black">Gastos do Período</p>
+                                        <p className="text-[8px] text-slate-500 uppercase font-black">Gastos Totais</p>
                                         <p className="text-sm font-bold text-red-400">R$ {totalSaidas.toLocaleString('pt-BR')}</p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-[8px] text-slate-500 uppercase font-black">Meta: {progressoMeta.toFixed(0)}%</p>
+                                        <p className="text-[8px] text-slate-500 uppercase font-black">Progresso Meta: {progressoMeta.toFixed(0)}%</p>
                                         <div className="w-20 h-1.5 bg-slate-800 rounded-full mt-1 overflow-hidden">
-                                            <div className="h-full bg-sky-400" style={{ width: `${progressoMeta}%` }}></div>
+                                            <div className="h-full bg-sky-400 transition-all duration-1000" style={{ width: `${progressoMeta}%` }}></div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Histórico Simplificado para Celular */}
                             <div className="space-y-3">
                                 <div className="flex justify-between items-center px-1">
-                                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Timeline de Gastos</h3>
-                                    <span className="text-[8px] text-slate-600 uppercase font-bold tracking-tighter">Últimos 50 logs</span>
+                                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Timeline de Lançamentos</h3>
+                                    <span className="text-[8px] text-slate-600 uppercase font-bold tracking-tighter">{transactions.length} Registros</span>
                                 </div>
-                                {transactions.map(t => (
+                                {transactions.length === 0 ? (
+                                    <div className="p-10 text-center text-slate-600 uppercase text-[10px] font-black tracking-widest">Sem lançamentos recentes</div>
+                                ) : transactions.map(t => (
                                     <div key={t.id} className="glass-card p-4 flex justify-between items-center border-white/5 active:bg-white/5 transition-all">
                                         <div className="flex items-center gap-4">
                                             <div className={`h-10 w-10 rounded-2xl flex items-center justify-center text-sm ${t.type === 'entrada' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
@@ -352,7 +382,7 @@
                                             <div className={`text-[13px] font-black ${t.type === 'entrada' ? 'text-emerald-400' : 'text-red-400'}`}>
                                                 {t.type === 'entrada' ? '+' : '-'} {t.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                             </div>
-                                            <button onClick={() => deleteTransaction(t.id)} className="h-8 w-8 text-slate-800 hover:text-red-500 transition-colors"><i className="fas fa-trash-alt"></i></button>
+                                            <button onClick={() => deleteTransaction(t.id)} className="h-8 w-8 text-slate-600 hover:text-red-500 transition-colors"><i className="fas fa-trash-alt"></i></button>
                                         </div>
                                     </div>
                                 ))}
@@ -364,7 +394,7 @@
                         <div className="space-y-6 fade-in px-1">
                             <div className="glass-card p-6 border-sky-500/30 shadow-2xl">
                                 <h3 className="text-xs font-black mb-6 flex items-center gap-2 text-sky-400 uppercase tracking-widest"><i className="fas fa-plus-circle"></i> Novo Lançamento</h3>
-                                <form onSubmit={(e) => { addTransaction(e); setScreen('dashboard'); }} className="space-y-6">
+                                <form onSubmit={addTransaction} className="space-y-6">
                                     <div className="flex bg-black/40 p-1.5 rounded-2xl border border-white/5">
                                         <button type="button" onClick={() => setFormData({...formData, type: 'entrada'})} className={`flex-1 py-3 text-[10px] font-black rounded-xl transition-all ${formData.type === 'entrada' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-500'}`}>RECEITA</button>
                                         <button type="button" onClick={() => setFormData({...formData, type: 'saida'})} className={`flex-1 py-3 text-[10px] font-black rounded-xl transition-all ${formData.type === 'saida' ? 'bg-red-500 text-white shadow-lg' : 'text-slate-500'}`}>DESPESA</button>
@@ -380,12 +410,12 @@
                                         </div>
 
                                         <div className="space-y-3">
-                                            <input type="text" placeholder="Descrição do gasto" required className="w-full lunar-input rounded-2xl p-5 text-sm font-bold" value={formData.desc} onChange={(e) => setFormData({...formData, desc: e.target.value})} />
+                                            <input type="text" placeholder="O que você comprou/recebeu?" required className="w-full lunar-input rounded-2xl p-5 text-sm font-bold" value={formData.desc} onChange={(e) => setFormData({...formData, desc: e.target.value})} />
                                             <input type="number" step="any" placeholder="Valor (R$)" required className="w-full lunar-input rounded-2xl p-5 text-sm font-bold" value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} />
                                         </div>
                                     </div>
 
-                                    <button className="w-full bg-sky-500 text-white font-black py-5 rounded-2xl text-[12px] uppercase tracking-widest shadow-xl shadow-sky-500/20 active:scale-95 transition-all">Sincronizar Dados</button>
+                                    <button type="submit" className="w-full bg-sky-500 text-white font-black py-5 rounded-2xl text-[12px] uppercase tracking-widest shadow-xl shadow-sky-500/20 active:scale-95 transition-all">Lançar na Nuvem</button>
                                 </form>
                             </div>
                         </div>
@@ -394,31 +424,32 @@
                     {screen === 'profile' && (
                         <div className="space-y-6 fade-in px-1">
                             <div className="glass-card p-6 border-white/5">
-                                <h3 className="text-[10px] font-black mb-6 flex items-center gap-2 text-sky-400 uppercase tracking-widest"><i className="fas fa-bullseye"></i> Meta da Família</h3>
+                                <h3 className="text-[10px] font-black mb-6 flex items-center gap-2 text-sky-400 uppercase tracking-widest"><i className="fas fa-bullseye"></i> Meta da Tripulação</h3>
                                 <form onSubmit={updateGoal} className="space-y-4">
-                                    <input type="text" placeholder="Título do Objetivo" className="w-full lunar-input rounded-xl p-4 text-xs font-bold" value={formData.goalTitle} onChange={(e) => setFormData({...formData, goalTitle: e.target.value})} />
-                                    <input type="number" placeholder="Valor Alvo (R$)" className="w-full lunar-input rounded-xl p-4 text-xs font-bold" value={formData.goalTarget} onChange={(e) => setFormData({...formData, goalTarget: e.target.value})} />
+                                    <input type="text" placeholder="Nome do Objetivo" className="w-full lunar-input rounded-xl p-4 text-xs font-bold" value={formData.goalTitle} onChange={(e) => setFormData({...formData, goalTitle: e.target.value})} />
+                                    <input type="number" placeholder="Alvo Financeiro (R$)" className="w-full lunar-input rounded-xl p-4 text-xs font-bold" value={formData.goalTarget} onChange={(e) => setFormData({...formData, goalTarget: e.target.value})} />
                                     <button type="submit" className="w-full bg-sky-500 text-white font-black py-4 rounded-xl text-[10px] uppercase shadow-lg shadow-sky-500/20">Atualizar Plano</button>
                                 </form>
                             </div>
 
                             <div className="glass-card p-6 border-white/5">
                                 <h3 className="text-[10px] font-black mb-4 text-sky-400 uppercase tracking-widest"><i className="fas fa-users-cog"></i> Tripulação Autorizada</h3>
-                                <div className="space-y-2 mb-6">
+                                <div className="space-y-2 mb-6 max-h-40 overflow-y-auto no-scrollbar">
                                     {allowedEmails.map(email => (
-                                        <div key={email} className="flex justify-between items-center bg-black/20 p-4 rounded-xl border border-white/5 text-[11px] font-bold">
-                                            <span>{email}</span>
+                                        <div key={email} className="flex justify-between items-center bg-black/20 p-4 rounded-xl border border-white/5 text-[10px] font-bold">
+                                            <span className="truncate mr-2">{email}</span>
                                             <i className="fas fa-shield-alt text-sky-500"></i>
                                         </div>
                                     ))}
                                 </div>
                                 <form onSubmit={addAllowedUser} className="flex gap-2">
-                                    <input type="email" placeholder="E-mail" className="flex-1 lunar-input rounded-xl p-4 text-xs font-bold" value={formData.newUserEmail} onChange={(e) => setFormData({...formData, newUserEmail: e.target.value})} />
-                                    <button className="bg-white text-black px-5 rounded-xl font-black text-[10px] active:scale-90 transition-all">ADD</button>
+                                    <input type="email" placeholder="Novo E-mail" className="flex-1 lunar-input rounded-xl p-4 text-xs font-bold" value={formData.newUserEmail} onChange={(e) => setFormData({...formData, newUserEmail: e.target.value})} />
+                                    <button type="submit" className="bg-white text-black px-5 rounded-xl font-black text-[10px] active:scale-90 transition-all">ADD</button>
                                 </form>
                             </div>
 
                             <button onClick={() => auth.signOut()} className="w-full bg-red-500/10 text-red-400 font-black py-5 rounded-2xl text-[10px] uppercase tracking-widest border border-red-500/20 active:scale-95 transition-all">Ejetar do Sistema</button>
+                            <p className="text-center text-[8px] text-slate-700 font-bold uppercase tracking-[0.2em]">Lunar Pro v2.1.0 • Stable</p>
                         </div>
                     )}
                 </div>
@@ -430,3 +461,5 @@
     </script>
 </body>
 </html>
+
+```
