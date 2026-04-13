@@ -7,8 +7,8 @@ import {
   createUserWithEmailAndPassword, 
   onAuthStateChanged, 
   signOut,
-  signInAnonymously,
-  signInWithCustomToken
+  signInWithCustomToken,
+  signInAnonymously
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -20,9 +20,7 @@ import {
   orderBy, 
   deleteDoc, 
   setDoc,
-  getDoc,
-  where,
-  limit
+  getDoc
 } from 'firebase/firestore';
 
 // --- CONFIGURAÇÃO E INICIALIZAÇÃO ---
@@ -30,80 +28,69 @@ const firebaseConfig = JSON.parse(__firebase_config);
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'lunar-pro-v2';
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'lunar-pro-enterprise';
 
-// --- COMPONENTES AUXILIARES ---
-const LucideIcon = ({ name, className }) => <i className={`fas ${name} ${className}`}></i>;
+// --- ÍCONES VIA SVG (Garante que funcione sem dependências externas falhas) ---
+const Icon = ({ name }) => {
+  const icons = {
+    wallet: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>,
+    plus: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>,
+    history: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>,
+    user: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+    logout: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>,
+    trash: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+  };
+  return icons[name] || null;
+};
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [screen, setScreen] = useState('dashboard');
   const [transactions, setTransactions] = useState([]);
-  const [goal, setGoal] = useState({ title: 'Reserva', target: 5000 });
-  const [allowedEmails, setAllowedEmails] = useState([]);
-  const [authMode, setAuthMode] = useState('login');
   
-  // Form States
+  // Auth Form State
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
+
+  // Transaction Form State
   const [amount, setAmount] = useState('');
   const [desc, setDesc] = useState('');
-  const [type, setType] = useState('saida');
-  const [category, setCategory] = useState('outro');
+  const [type, setType] = useState('entrada');
 
-  // --- 1. AUTENTICAÇÃO PROFISSIONAL ---
+  // 1. Inicialização de Auth
   useEffect(() => {
-    const initAuth = async () => {
+    const init = async () => {
       try {
         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
           await signInWithCustomToken(auth, __initial_auth_token);
         }
-      } catch (e) { console.error("Auth Token Error", e); }
+      } catch (e) { console.error(e); }
     };
-    initAuth();
-
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
+    init();
+    return onAuthStateChanged(auth, (u) => {
       setUser(u);
       setLoading(false);
     });
-    return () => unsubscribe();
   }, []);
 
-  // --- 2. SINCRONIZAÇÃO DE DADOS EM TEMPO REAL ---
+  // 2. Escuta de Dados (Real-time)
   useEffect(() => {
     if (!user) return;
-
-    // Coleção de Transações (Padrão RULE 1)
     const q = query(
       collection(db, 'artifacts', appId, 'public', 'data', 'transactions'),
       orderBy('timestamp', 'desc')
     );
-
-    const unsubTx = onSnapshot(q, (snapshot) => {
-      const txs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setTransactions(txs);
-    }, (err) => console.error("Erro ao buscar transações:", err));
-
-    // Configurações e Meta
-    const unsubSettings = onSnapshot(
-      doc(db, 'artifacts', appId, 'public', 'data', 'settings'),
-      (docSnap) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (data.goal) setGoal(data.goal);
-          if (data.allowedEmails) setAllowedEmails(data.allowedEmails);
-        }
-      }
-    );
-
-    return () => { unsubTx(); unsubSettings(); };
+    return onSnapshot(q, (snap) => {
+      setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, (err) => console.error("Erro Firestore:", err));
   }, [user]);
 
-  // --- 3. LÓGICA DE NEGÓCIO ---
-  const totals = useMemo(() => {
+  // 3. Lógica de Cálculos Profissional
+  const stats = useMemo(() => {
     return transactions.reduce((acc, tx) => {
-      const val = parseFloat(tx.amount) || 0;
+      const val = Number(tx.amount) || 0;
       if (tx.type === 'entrada') acc.in += val;
       else acc.out += val;
       acc.total = acc.in - acc.out;
@@ -111,188 +98,186 @@ export default function App() {
     }, { in: 0, out: 0, total: 0 });
   }, [transactions]);
 
-  const handleTransaction = async (e) => {
+  // Ações
+  const handleAuth = async (e) => {
     e.preventDefault();
-    if (!user || !amount || !desc) return;
+    try {
+      if (isRegistering) await createUserWithEmailAndPassword(auth, email, password);
+      else await signInWithEmailAndPassword(auth, email, password);
+    } catch (e) { alert("Erro de Acesso: " + e.message); }
+  };
 
+  const addTransaction = async (e) => {
+    e.preventDefault();
+    if (!amount || !desc) return;
     try {
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'transactions'), {
         amount: parseFloat(amount),
         desc,
         type,
-        category,
         userId: user.uid,
         userEmail: user.email,
-        timestamp: Date.now(),
-        date: new Date().toISOString()
+        timestamp: Date.now()
       });
       setAmount('');
       setDesc('');
       setScreen('dashboard');
-    } catch (err) {
-      alert("Falha na sincronização orbital: " + err.message);
-    }
+    } catch (e) { alert("Erro ao salvar dados cósmicos."); }
   };
 
-  const deleteTx = async (id) => {
-    try {
-      await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'transactions', id));
-    } catch (e) { alert("Erro ao deletar."); }
+  const removeTx = async (id) => {
+    if(!confirm("Deseja apagar este registro do log?")) return;
+    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'transactions', id));
   };
 
-  // --- RENDERS ---
   if (loading) return (
     <div className="min-h-screen bg-[#020617] flex items-center justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-sky-500"></div>
+      <div className="w-10 h-10 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
     </div>
   );
 
   if (!user) return (
-    <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6 text-white">
-      <div className="w-full max-w-md bg-slate-900/50 backdrop-blur-xl p-8 rounded-3xl border border-white/10">
-        <h1 className="text-3xl font-black mb-2 italic">LUNAR <span className="text-sky-400">PRO</span></h1>
-        <p className="text-slate-400 text-xs mb-8 uppercase tracking-widest font-bold">Protocolo de Acesso</p>
-        
-        <div className="space-y-4">
-          <input 
-            type="email" 
-            placeholder="E-mail" 
-            className="w-full bg-black/40 border border-white/10 p-4 rounded-2xl outline-none focus:border-sky-500 transition-all"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-          />
-          <input 
-            type="password" 
-            placeholder="Senha" 
-            className="w-full bg-black/40 border border-white/10 p-4 rounded-2xl outline-none focus:border-sky-500 transition-all"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-          />
-          <button 
-            onClick={async () => {
-              try {
-                if(authMode === 'login') await signInWithEmailAndPassword(auth, email, password);
-                else await createUserWithEmailAndPassword(auth, email, password);
-              } catch(e) { alert(e.message); }
-            }}
-            className="w-full bg-sky-500 hover:bg-sky-400 text-white font-bold py-4 rounded-2xl shadow-lg shadow-sky-500/20 transition-all"
-          >
-            {authMode === 'login' ? 'INICIAR MISSÃO' : 'CRIAR CONTA'}
-          </button>
-          <p 
-            className="text-center text-[10px] text-slate-500 cursor-pointer font-bold uppercase mt-4"
-            onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
-          >
-            {authMode === 'login' ? 'Não possui acesso? Registre-se' : 'Já possui conta? Faça login'}
-          </p>
+    <div className="min-h-screen bg-[#020617] text-white flex flex-col items-center justify-center p-8 font-sans">
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center">
+          <h1 className="text-4xl font-black italic tracking-tighter">LUNAR <span className="text-sky-500 text-shadow-glow">PRO</span></h1>
+          <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.3em] mt-2">Finanças de Outro Mundo</p>
         </div>
+
+        <form onSubmit={handleAuth} className="bg-slate-900/40 p-8 rounded-[2.5rem] border border-white/5 backdrop-blur-md space-y-4">
+          <input 
+            type="email" placeholder="E-mail de Tripulante" 
+            className="w-full bg-black/50 border border-white/10 p-4 rounded-2xl outline-none focus:border-sky-500 transition-all font-medium"
+            value={email} onChange={e => setEmail(e.target.value)}
+          />
+          <input 
+            type="password" placeholder="Senha" 
+            className="w-full bg-black/50 border border-white/10 p-4 rounded-2xl outline-none focus:border-sky-500 transition-all font-medium"
+            value={password} onChange={e => setPassword(e.target.value)}
+          />
+          <button className="w-full bg-sky-500 hover:bg-sky-400 py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg shadow-sky-500/20 transition-all">
+            {isRegistering ? 'CRIAR ACESSO' : 'INICIAR MISSÃO'}
+          </button>
+          <p className="text-center text-[10px] text-slate-500 font-bold uppercase cursor-pointer" onClick={() => setIsRegistering(!isRegistering)}>
+            {isRegistering ? 'Já tem conta? Faça Login' : 'Novo por aqui? Registre-se'}
+          </p>
+        </form>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white pb-24 font-['Plus_Jakarta_Sans']">
-      {/* HEADER */}
-      <header className="p-6 flex justify-between items-center">
+    <div className="min-h-screen bg-[#020617] text-white font-sans selection:bg-sky-500/30">
+      {/* HEADER FIXO */}
+      <header className="p-6 flex justify-between items-center sticky top-0 bg-[#020617]/80 backdrop-blur-md z-40">
         <div>
-          <h2 className="text-xl font-black italic">LUNAR <span className="text-sky-400">PRO</span></h2>
-          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">Comandante: {user.email}</p>
+          <h2 className="text-xl font-black italic tracking-tighter leading-none">LUNAR <span className="text-sky-500">PRO</span></h2>
+          <span className="text-[9px] text-slate-500 font-bold uppercase">{user.email.split('@')[0]}</span>
         </div>
-        <button onClick={() => signOut(auth)} className="bg-white/5 p-3 rounded-xl border border-white/10">
-          <LucideIcon name="fa-sign-out-alt" className="text-slate-400" />
+        <button onClick={() => signOut(auth)} className="p-2 bg-white/5 rounded-xl border border-white/5 hover:bg-red-500/20 transition-colors">
+          <Icon name="logout" />
         </button>
       </header>
 
-      <main className="px-6 space-y-6 max-w-2xl mx-auto">
+      <main className="px-6 max-w-2xl mx-auto pb-32">
         {screen === 'dashboard' && (
-          <div className="space-y-6 animate-fadeIn">
-            {/* CARD DE SALDO */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-950 p-8 rounded-[2rem] border border-white/10 shadow-2xl">
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* CARD DE SALDO MASTER */}
+            <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-sky-950/30 p-8 rounded-[2.5rem] border border-white/10 relative overflow-hidden shadow-2xl">
               <div className="relative z-10">
-                <p className="text-[10px] font-black text-sky-400 uppercase tracking-[0.2em] mb-1">Saldo em Órbita</p>
-                <h3 className="text-4xl font-black tracking-tighter">
-                  R$ {totals.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                <p className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-1">Capital em Órbita</p>
+                <h3 className="text-5xl font-black tracking-tighter">
+                  <span className="text-2xl text-slate-500 mr-2">R$</span>
+                  {stats.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </h3>
-                <div className="flex gap-4 mt-6">
-                  <div className="flex-1 bg-white/5 p-3 rounded-2xl border border-white/5">
-                    <p className="text-[8px] text-slate-500 font-bold uppercase">Entradas</p>
-                    <p className="text-emerald-400 font-bold text-sm">+{totals.in.toLocaleString('pt-BR')}</p>
+                
+                <div className="grid grid-cols-2 gap-4 mt-8">
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-2xl">
+                    <p className="text-[8px] font-bold text-emerald-400 uppercase mb-1">Inflow</p>
+                    <p className="text-lg font-black text-emerald-300">+{stats.in.toLocaleString('pt-BR')}</p>
                   </div>
-                  <div className="flex-1 bg-white/5 p-3 rounded-2xl border border-white/5">
-                    <p className="text-[8px] text-slate-500 font-bold uppercase">Saídas</p>
-                    <p className="text-red-400 font-bold text-sm">-{totals.out.toLocaleString('pt-BR')}</p>
+                  <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl">
+                    <p className="text-[8px] font-bold text-red-400 uppercase mb-1">Outflow</p>
+                    <p className="text-lg font-black text-red-300">-{stats.out.toLocaleString('pt-BR')}</p>
                   </div>
                 </div>
               </div>
-              <div className="absolute -right-4 -top-4 w-32 h-32 bg-sky-500/10 blur-3xl rounded-full"></div>
+              {/* Detalhe estético */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-sky-500/10 blur-[80px] rounded-full"></div>
             </div>
 
-            {/* LISTA DE TRANSAÇÕES */}
-            <div className="space-y-4">
+            {/* LISTA DE ATIVIDADES */}
+            <section className="space-y-4">
               <div className="flex justify-between items-center px-2">
-                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Logs de Atividade</h4>
-                <LucideIcon name="fa-history" className="text-slate-600 text-xs" />
+                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Fluxo de Dados</h4>
+                <Icon name="history" />
               </div>
-              {transactions.map(tx => (
-                <div key={tx.id} className="bg-slate-900/40 backdrop-blur-md p-4 rounded-2xl border border-white/5 flex items-center justify-between group">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm ${tx.type === 'entrada' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
-                      <LucideIcon name={tx.type === 'entrada' ? 'fa-arrow-up' : 'fa-arrow-down'} />
+              
+              <div className="space-y-3">
+                {transactions.length === 0 && (
+                  <div className="text-center p-12 bg-white/5 rounded-[2rem] border border-dashed border-white/10">
+                    <p className="text-xs text-slate-500 font-bold uppercase">Sem registros detectados.</p>
+                  </div>
+                )}
+                {transactions.map(tx => (
+                  <div key={tx.id} className="bg-slate-900/60 p-5 rounded-3xl border border-white/5 flex items-center justify-between group hover:border-white/10 transition-all">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${tx.type === 'entrada' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                        <div className={tx.type === 'entrada' ? 'rotate-0' : 'rotate-180'}>
+                          <Icon name="plus" />
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold">{tx.desc}</p>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase">{tx.userEmail?.split('@')[0]} • {new Date(tx.timestamp).toLocaleDateString('pt-BR')}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-bold leading-none mb-1">{tx.desc}</p>
-                      <p className="text-[9px] text-slate-500 font-bold uppercase italic">{new Date(tx.timestamp).toLocaleDateString()} • {tx.userEmail.split('@')[0]}</p>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-sm font-black ${tx.type === 'entrada' ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {tx.type === 'entrada' ? '+' : '-'} R$ {tx.amount.toLocaleString('pt-BR')}
+                      </span>
+                      <button onClick={() => removeTx(tx.id)} className="opacity-0 group-hover:opacity-100 p-2 text-slate-600 hover:text-red-400 transition-all">
+                        <Icon name="trash" />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <span className={`text-sm font-black ${tx.type === 'entrada' ? 'text-emerald-400' : 'text-red-400'}`}>
-                      {tx.type === 'entrada' ? '' : '-'}R$ {tx.amount.toLocaleString('pt-BR')}
-                    </span>
-                    <button onClick={() => deleteTx(tx.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-slate-600 hover:text-red-500">
-                      <LucideIcon name="fa-trash" className="text-xs" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </section>
           </div>
         )}
 
         {screen === 'add' && (
-          <div className="animate-fadeIn">
-            <div className="bg-slate-900/80 p-8 rounded-[2rem] border border-sky-500/20 shadow-2xl">
-              <h3 className="text-sm font-black uppercase tracking-widest text-sky-400 mb-8 italic">Nova Entrada de Dados</h3>
-              <form onSubmit={handleTransaction} className="space-y-6">
-                <div className="flex p-1 bg-black/40 rounded-2xl border border-white/5">
-                  <button type="button" onClick={() => setType('entrada')} className={`flex-1 py-3 text-[10px] font-bold rounded-xl transition-all ${type === 'entrada' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-500'}`}>ENTRADA</button>
-                  <button type="button" onClick={() => setType('saida')} className={`flex-1 py-3 text-[10px] font-bold rounded-xl transition-all ${type === 'saida' ? 'bg-red-500 text-white shadow-lg' : 'text-slate-500'}`}>SAÍDA</button>
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-slate-900 p-8 rounded-[2.5rem] border border-white/10 shadow-2xl">
+              <h3 className="text-sm font-black uppercase tracking-widest text-sky-400 mb-8 italic">Adicionar Movimentação</h3>
+              <form onSubmit={addTransaction} className="space-y-6">
+                <div className="flex p-1.5 bg-black/50 rounded-2xl border border-white/5">
+                  <button type="button" onClick={() => setType('entrada')} className={`flex-1 py-3 text-[10px] font-black rounded-xl transition-all ${type === 'entrada' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-500'}`}>LUCRO / ENTRADA</button>
+                  <button type="button" onClick={() => setType('saida')} className={`flex-1 py-3 text-[10px] font-black rounded-xl transition-all ${type === 'saida' ? 'bg-red-500 text-white shadow-lg' : 'text-slate-500'}`}>GASTO / SAÍDA</button>
                 </div>
-                
+
                 <div className="space-y-4">
-                  <div className="group">
-                    <label className="text-[9px] font-black text-slate-500 uppercase ml-2 mb-1 block">Identificação do Lançamento</label>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black text-slate-500 uppercase ml-2 tracking-widest">Descrição do Evento</label>
                     <input 
-                      type="text" 
-                      placeholder="Ex: Aluguel, Mercado, Freelance..." 
-                      className="w-full bg-black/40 border border-white/10 p-5 rounded-2xl outline-none focus:border-sky-500 transition-all font-bold text-sm"
-                      value={desc}
-                      onChange={e => setDesc(e.target.value)}
+                      type="text" required placeholder="Ex: Salário, Venda, Aluguel..." 
+                      className="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-sky-500 transition-all font-bold text-sm"
+                      value={desc} onChange={e => setDesc(e.target.value)}
                     />
                   </div>
-                  <div className="group">
-                    <label className="text-[9px] font-black text-slate-500 uppercase ml-2 mb-1 block">Valor Numérico (BRL)</label>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black text-slate-500 uppercase ml-2 tracking-widest">Valor Financeiro</label>
                     <input 
-                      type="number" 
-                      placeholder="0,00" 
-                      className="w-full bg-black/40 border border-white/10 p-5 rounded-2xl outline-none focus:border-sky-500 transition-all font-bold text-lg text-sky-400"
-                      value={amount}
-                      onChange={e => setAmount(e.target.value)}
+                      type="number" step="0.01" required placeholder="0.00" 
+                      className="w-full bg-black/50 border border-white/10 p-5 rounded-2xl outline-none focus:border-sky-500 transition-all font-black text-xl text-sky-400"
+                      value={amount} onChange={e => setAmount(e.target.value)}
                     />
                   </div>
                 </div>
 
-                <button type="submit" className="w-full bg-sky-500 py-5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-sky-500/20 hover:bg-sky-400 transition-all active:scale-95">
-                  SINCRONIZAR COM A REDE
+                <button className="w-full bg-sky-500 py-5 rounded-3xl font-black text-xs uppercase tracking-widest shadow-xl shadow-sky-500/20 active:scale-95 transition-all">
+                  PROCESSAR TRANSAÇÃO
                 </button>
               </form>
             </div>
@@ -300,16 +285,22 @@ export default function App() {
         )}
 
         {screen === 'profile' && (
-          <div className="space-y-6 animate-fadeIn">
-            <div className="bg-slate-900/50 p-6 rounded-3xl border border-white/10">
-              <h3 className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-4 italic">Segurança & Compartilhamento</h3>
-              <p className="text-xs text-slate-400 leading-relaxed mb-6">
-                Este sistema utiliza criptografia de ponta a ponta via Firebase. Seus dados são sincronizados em milissegundos com todos os membros da família autorizados.
-              </p>
-              <div className="p-4 bg-sky-500/10 border border-sky-500/20 rounded-2xl">
-                <div className="flex items-center gap-3">
-                  <LucideIcon name="fa-fingerprint" className="text-sky-400" />
-                  <span className="text-[10px] font-bold uppercase">ID da Sessão: {appId}</span>
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-slate-900/50 p-8 rounded-[2.5rem] border border-white/10 text-center">
+              <div className="w-20 h-20 bg-sky-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-sky-400">
+                <Icon name="user" />
+              </div>
+              <h3 className="font-black text-lg">{user.email}</h3>
+              <p className="text-[10px] text-slate-500 font-bold uppercase mt-1">Status: Comandante Ativo</p>
+              
+              <div className="mt-8 pt-8 border-t border-white/5 space-y-4">
+                <div className="flex justify-between text-xs font-bold">
+                  <span className="text-slate-500">ID DA NAVE</span>
+                  <span className="text-sky-400 uppercase tracking-tighter">{appId}</span>
+                </div>
+                <div className="flex justify-between text-xs font-bold">
+                  <span className="text-slate-500">LOGS TOTAIS</span>
+                  <span>{transactions.length} registros</span>
                 </div>
               </div>
             </div>
@@ -317,24 +308,27 @@ export default function App() {
         )}
       </main>
 
-      {/* TAB BAR */}
-      <nav className="fixed bottom-0 left-0 right-0 h-20 bg-slate-950/80 backdrop-blur-2xl border-t border-white/10 flex justify-around items-center px-8 z-50">
+      {/* BARRA DE NAVEGAÇÃO PROFISSIONAL */}
+      <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-slate-900/90 backdrop-blur-3xl border border-white/10 h-20 rounded-[2.5rem] flex justify-around items-center px-8 shadow-2xl z-50">
         <button onClick={() => setScreen('dashboard')} className={`flex flex-col items-center gap-1 transition-all ${screen === 'dashboard' ? 'text-sky-400 scale-110' : 'text-slate-600'}`}>
-          <LucideIcon name="fa-th-large" className="text-lg" />
-          <span className="text-[8px] font-black uppercase">Home</span>
+          <Icon name="wallet" />
+          <span className="text-[8px] font-black uppercase">Capital</span>
         </button>
-        <button onClick={() => setScreen('add')} className="w-14 h-14 bg-sky-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-sky-500/30 -translate-y-6 border-4 border-[#020617] active:scale-90 transition-all">
-          <LucideIcon name="fa-plus" className="text-xl" />
+        
+        <button onClick={() => setScreen('add')} className="w-14 h-14 bg-sky-500 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-sky-500/30 -translate-y-4 border-4 border-[#020617] active:scale-90 transition-all">
+          <Icon name="plus" />
         </button>
+
         <button onClick={() => setScreen('profile')} className={`flex flex-col items-center gap-1 transition-all ${screen === 'profile' ? 'text-sky-400 scale-110' : 'text-slate-600'}`}>
-          <LucideIcon name="fa-shield-alt" className="text-lg" />
-          <span className="text-[8px] font-black uppercase">Admin</span>
+          <Icon name="user" />
+          <span className="text-[8px] font-black uppercase">Nave</span>
         </button>
       </nav>
 
       <style>{`
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; overflow-x: hidden; }
+        .text-shadow-glow { text-shadow: 0 0 15px rgba(14, 165, 233, 0.4); }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
       `}</style>
     </div>
