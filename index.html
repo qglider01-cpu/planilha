@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trader Pro | Sistema de Gestão de Alavancagem</title>
+    <title>Trader Pro | Gestão de Risco & Alavancagem</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -47,9 +47,13 @@
             transition: all 0.2s ease;
         }
 
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
         }
 
         .input-field {
@@ -76,6 +80,11 @@
         }
 
         .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        
+        .stop-loss-glow {
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+        }
     </style>
 </head>
 <body>
@@ -87,7 +96,6 @@
         import { getFirestore, doc, onSnapshot, setDoc, updateDoc, collection, addDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-        // Configuração do Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyA-u9ii8P_ril727CzvAtIVFKU76TrcHzg",
             authDomain: "planilha-a251b.firebaseapp.com",
@@ -98,12 +106,10 @@
             measurementId: "G-EJYQ0WSHM1"
         };
 
-        // Inicialização
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        // Disponibilizar para o Babel/React
         window.FirebaseDB = { db, doc, onSnapshot, setDoc, updateDoc, collection, addDoc, deleteDoc, query, orderBy };
         window.FirebaseAuth = { auth, signInAnonymously, onAuthStateChanged };
     </script>
@@ -124,23 +130,19 @@
                 name: 'Trader Pro', 
                 target: 1000, 
                 initialBalance: 100,
-                riskPercent: 5
+                riskPercent: 5,
+                stopLoss: 50 // Novo campo: Stop Loss Diário
             });
 
             // Auth Effect
             useEffect(() => {
                 if (!auth) return;
-                
                 const unsubscribe = onAuthStateChanged(auth, (u) => {
-                    if (u) {
-                        setUser(u);
-                    } else {
-                        signInAnonymously(auth).catch(err => {
-                            console.error(err);
-                            setAuthError("Erro de Autenticação. Verifique se o 'Acesso Anônimo' está ativo no Firebase.");
-                            setLoading(false);
-                        });
-                    }
+                    if (u) setUser(u);
+                    else signInAnonymously(auth).catch(err => {
+                        setAuthError("Erro de Autenticação. Verifique o Firebase.");
+                        setLoading(false);
+                    });
                 });
                 return () => unsubscribe();
             }, []);
@@ -148,21 +150,15 @@
             // Data Sync Effect
             useEffect(() => {
                 if (!user || !db) return;
-
                 const pRef = doc(db, 'users_data', user.uid, 'settings', 'profile');
                 const tRef = collection(db, 'users_data', user.uid, 'transactions');
                 const q = query(tRef, orderBy('timestamp', 'desc'));
 
-                // Sync Profile
                 const unsubP = onSnapshot(pRef, (s) => {
-                    if (s.exists()) {
-                        setProfile(s.data());
-                    } else {
-                        setDoc(pRef, profile);
-                    }
+                    if (s.exists()) setProfile(s.data());
+                    else setDoc(pRef, profile);
                 });
 
-                // Sync Transactions
                 const unsubT = onSnapshot(q, (s) => {
                     const data = s.docs.map(d => ({id: d.id, ...d.data()}));
                     setTransactions(data);
@@ -174,29 +170,48 @@
 
             // Calculations
             const stats = useMemo(() => {
+                // Filtrar transações de hoje para o Stop Loss
+                const today = new Date().setHours(0,0,0,0);
+                const todayTrans = transactions.filter(t => t.timestamp >= today);
+                
                 const totalProfit = transactions.filter(t => t.type === 'profit').reduce((a, b) => a + b.amount, 0);
                 const totalLoss = transactions.filter(t => t.type === 'loss').reduce((a, b) => a + b.amount, 0);
+                
+                const todayProfit = todayTrans.filter(t => t.type === 'profit').reduce((a, b) => a + b.amount, 0);
+                const todayLoss = todayTrans.filter(t => t.type === 'loss').reduce((a, b) => a + b.amount, 0);
+                const dailyResult = todayProfit - todayLoss;
+                
                 const currentBalance = profile.initialBalance + totalProfit - totalLoss;
                 const suggestedEntry = (currentBalance * (profile.riskPercent / 100));
                 const progress = Math.min(((currentBalance - profile.initialBalance) / (profile.target - profile.initialBalance)) * 100, 100);
-                const isStopGain = currentBalance >= profile.target;
                 
-                return { currentBalance, suggestedEntry, progress, isStopGain, totalProfit, totalLoss };
+                const isStopGain = currentBalance >= profile.target;
+                const isStopLoss = dailyResult <= -(profile.stopLoss);
+                
+                const redCount = todayTrans.filter(t => t.type === 'loss').length;
+                const winCount = todayTrans.filter(t => t.type === 'profit').length;
+
+                return { 
+                    currentBalance, suggestedEntry, progress, isStopGain, isStopLoss, 
+                    totalProfit, totalLoss, dailyResult, redCount, winCount 
+                };
             }, [transactions, profile]);
 
             const handleTrans = async (type, manualAmount = null) => {
+                if (stats.isStopLoss && type === 'loss') {
+                    alert("Você já atingiu o Stop Loss hoje! Proteja seu capital.");
+                }
+                
                 const amount = manualAmount !== null ? parseFloat(manualAmount) : stats.suggestedEntry;
                 if (isNaN(amount) || amount <= 0 || !user) return;
 
                 try {
                     await addDoc(collection(db, 'users_data', user.uid, 'transactions'), {
-                        amount, 
-                        type, 
-                        timestamp: Date.now()
+                        amount, type, timestamp: Date.now()
                     });
                     setInputValue('');
                 } catch (err) {
-                    alert("Erro ao salvar transação: " + err.message);
+                    alert("Erro ao salvar: " + err.message);
                 }
             };
 
@@ -210,18 +225,10 @@
                 }
             };
 
-            if (authError) return (
-                <div className="h-screen flex flex-col items-center justify-center p-6 text-center">
-                    <div className="text-rose-500 mb-4"><i data-lucide="alert-circle" size="48"></i></div>
-                    <h2 className="text-xl font-bold mb-2">Erro de Configuração</h2>
-                    <p className="text-slate-400 max-w-md">{authError}</p>
-                </div>
-            );
-
             if (loading) return (
                 <div className="h-screen flex flex-col items-center justify-center space-y-4">
                     <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-slate-400 font-medium animate-pulse">Sincronizando com a Nuvem...</p>
+                    <p className="text-slate-400 font-medium animate-pulse">Sincronizando Gestão...</p>
                 </div>
             );
 
@@ -232,46 +239,80 @@
                         <div>
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-blue-500/20 rounded-lg">
-                                    <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                                    <div className={`w-3 h-3 rounded-full animate-pulse ${stats.isStopLoss ? 'bg-rose-500' : 'bg-blue-500'}`}></div>
                                 </div>
                                 <h1 className="text-2xl font-extrabold tracking-tight text-white uppercase">
                                     {profile.name}
                                 </h1>
                             </div>
-                            <p className="text-xs text-slate-500 font-semibold tracking-widest mt-1 uppercase">Trading Dashboard Pro</p>
+                            <p className="text-xs text-slate-500 font-semibold tracking-widest mt-1 uppercase">Controle de Risco Ativo</p>
                         </div>
                         <button 
                             onClick={() => setIsEditingProfile(!isEditingProfile)}
                             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all text-xs font-bold"
                         >
-                            {isEditingProfile ? "CANCELAR" : "CONFIGURAÇÕES"}
+                            {isEditingProfile ? "CANCELAR" : "AJUSTES"}
                         </button>
                     </header>
+
+                    {/* Alerts Section */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {stats.isStopLoss && (
+                            <div className="bg-rose-500/10 border border-rose-500/50 p-4 rounded-2xl flex items-center gap-4 text-rose-400 stop-loss-glow animate-bounce">
+                                <div className="text-2xl">🚫</div>
+                                <div>
+                                    <p className="font-black text-xs uppercase tracking-widest">STOP LOSS ATINGIDO!</p>
+                                    <p className="text-[10px] font-bold opacity-70 text-rose-300">Limite de R$ {profile.stopLoss} excedido. Pare agora!</p>
+                                </div>
+                            </div>
+                        )}
+                        {stats.isStopGain && (
+                            <div className="bg-emerald-500/10 border border-emerald-500/50 p-4 rounded-2xl flex items-center gap-4 text-emerald-400 animate-pulse">
+                                <div className="text-2xl">🏆</div>
+                                <div>
+                                    <p className="font-black text-xs uppercase tracking-widest">META ATINGIDA!</p>
+                                    <p className="text-[10px] font-bold opacity-70 text-emerald-300">Meta de R$ {profile.target} batida. Proteja o lucro!</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
 
                     {/* Main Stats Grid */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Balance Card */}
                         <div className="lg:col-span-2 glass-card rounded-[2rem] p-8 relative overflow-hidden">
                             <div className="relative z-10">
-                                <p className="text-sm font-medium text-slate-400 mb-1">Saldo Atual</p>
-                                <h2 className={`text-5xl font-black mono ${stats.currentBalance >= profile.initialBalance ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                    R$ {stats.currentBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                </h2>
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <p className="text-sm font-medium text-slate-400 mb-1">Saldo Atual</p>
+                                        <h2 className={`text-5xl font-black mono ${stats.currentBalance >= profile.initialBalance ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                            R$ {stats.currentBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        </h2>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Resultado Diário</p>
+                                        <p className={`text-xl font-black mono ${stats.dailyResult >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                            {stats.dailyResult >= 0 ? '+' : ''}R$ {stats.dailyResult.toFixed(2)}
+                                        </p>
+                                    </div>
+                                </div>
                                 
-                                <div className="mt-8 grid grid-cols-2 md:grid-cols-3 gap-6">
+                                <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-6">
                                     <div>
                                         <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Meta</p>
                                         <p className="text-lg font-bold text-blue-400 mono">R$ {profile.target.toFixed(2)}</p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Banca Inicial</p>
-                                        <p className="text-lg font-bold text-slate-300 mono">R$ {profile.initialBalance.toFixed(2)}</p>
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Stop Loss</p>
+                                        <p className="text-lg font-bold text-rose-500 mono">R$ {profile.stopLoss.toFixed(2)}</p>
                                     </div>
-                                    <div className="hidden md:block">
-                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Resultado %</p>
-                                        <p className={`text-lg font-bold mono ${stats.currentBalance >= profile.initialBalance ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                            {(((stats.currentBalance - profile.initialBalance) / profile.initialBalance) * 100).toFixed(2)}%
-                                        </p>
+                                    <div>
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Wins Hoje</p>
+                                        <p className="text-lg font-bold text-emerald-500 mono">{stats.winCount}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Reds Hoje</p>
+                                        <p className="text-lg font-bold text-rose-500 mono">{stats.redCount}</p>
                                     </div>
                                 </div>
 
@@ -289,31 +330,31 @@
                                     </div>
                                 </div>
                             </div>
-                            {/* Decorative background element */}
-                            <div className="absolute -right-10 -top-10 w-40 h-40 bg-blue-500/10 blur-[80px] rounded-full"></div>
+                            <div className={`absolute -right-10 -top-10 w-40 h-40 blur-[80px] rounded-full ${stats.isStopLoss ? 'bg-rose-500/20' : 'bg-blue-500/10'}`}></div>
                         </div>
 
                         {/* Suggested Entry Card */}
-                        <div className="glass-card rounded-[2rem] p-8 flex flex-col justify-between border-blue-500/20">
+                        <div className={`glass-card rounded-[2rem] p-8 flex flex-col justify-between ${stats.isStopLoss ? 'border-rose-500/30' : 'border-blue-500/20'}`}>
                             <div>
                                 <div className="flex items-center gap-2 mb-4">
-                                    <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 20 20"/></svg>
+                                    <div className={`p-2 rounded-lg ${stats.isStopLoss ? 'bg-rose-500/20 text-rose-400' : 'bg-indigo-500/20 text-indigo-400'}`}>
+                                        <i data-lucide="target" size="20"></i>
                                     </div>
-                                    <span className="text-sm font-bold text-indigo-300 uppercase tracking-wider">Entrada Sugerida</span>
+                                    <span className="text-sm font-bold uppercase tracking-wider">Entrada Sugerida</span>
                                 </div>
-                                <p className="text-4xl font-black mono text-white">
+                                <p className={`text-4xl font-black mono ${stats.isStopLoss ? 'text-slate-500 line-through' : 'text-white'}`}>
                                     R$ {stats.suggestedEntry.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                 </p>
                                 <p className="text-xs text-slate-500 mt-2 font-medium">
-                                    Baseado em {profile.riskPercent}% de risco da banca atual.
+                                    {stats.isStopLoss ? "Operações bloqueadas por Stop Loss." : `Risco de ${profile.riskPercent}% da banca.`}
                                 </p>
                             </div>
                             <button 
                                 onClick={() => handleTrans('profit')}
-                                className="mt-6 w-full py-4 rounded-2xl btn-primary font-black text-sm tracking-widest shadow-lg"
+                                disabled={stats.isStopLoss}
+                                className={`mt-6 w-full py-4 rounded-2xl font-black text-sm tracking-widest shadow-lg transition-all ${stats.isStopLoss ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'btn-primary text-white'}`}
                             >
-                                LANÇAR WIN SUGERIDO
+                                {stats.isStopLoss ? "STOP LOSS ATINGIDO" : "LANÇAR WIN SUGERIDO"}
                             </button>
                         </div>
                     </div>
@@ -324,27 +365,35 @@
                         <div className="lg:col-span-1 space-y-6">
                             {isEditingProfile ? (
                                 <div className="glass-card rounded-[2rem] p-6 space-y-4 animate-fade-in">
-                                    <h3 className="text-sm font-bold uppercase tracking-widest text-blue-400 mb-2">Ajustes do Sistema</h3>
+                                    <h3 className="text-sm font-bold uppercase tracking-widest text-blue-400 mb-2">Ajustes de Gestão</h3>
                                     <div className="space-y-3">
                                         <label className="block">
                                             <span className="text-[10px] text-slate-500 font-bold uppercase ml-1">Nome do Trader</span>
                                             <input className="w-full input-field p-3 rounded-xl text-sm font-bold" value={profile.name} onChange={e => setProfile({...profile, name: e.target.value})} />
                                         </label>
-                                        <label className="block">
-                                            <span className="text-[10px] text-slate-500 font-bold uppercase ml-1">Banca Inicial (R$)</span>
-                                            <input type="number" className="w-full input-field p-3 rounded-xl text-sm font-bold mono" value={profile.initialBalance} onChange={e => setProfile({...profile, initialBalance: parseFloat(e.target.value) || 0})} />
-                                        </label>
-                                        <label className="block">
-                                            <span className="text-[10px] text-slate-500 font-bold uppercase ml-1">Meta de Ganho (R$)</span>
-                                            <input type="number" className="w-full input-field p-3 rounded-xl text-sm font-bold mono" value={profile.target} onChange={e => setProfile({...profile, target: parseFloat(e.target.value) || 0})} />
-                                        </label>
-                                        <label className="block">
-                                            <span className="text-[10px] text-slate-500 font-bold uppercase ml-1">Risco por Operação (%)</span>
-                                            <input type="number" className="w-full input-field p-3 rounded-xl text-sm font-bold mono" value={profile.riskPercent} onChange={e => setProfile({...profile, riskPercent: parseFloat(e.target.value) || 0})} />
-                                        </label>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <label className="block">
+                                                <span className="text-[10px] text-slate-500 font-bold uppercase ml-1">Banca (R$)</span>
+                                                <input type="number" className="w-full input-field p-3 rounded-xl text-sm font-bold mono" value={profile.initialBalance} onChange={e => setProfile({...profile, initialBalance: parseFloat(e.target.value) || 0})} />
+                                            </label>
+                                            <label className="block">
+                                                <span className="text-[10px] text-slate-500 font-bold uppercase ml-1">Risco (%)</span>
+                                                <input type="number" className="w-full input-field p-3 rounded-xl text-sm font-bold mono" value={profile.riskPercent} onChange={e => setProfile({...profile, riskPercent: parseFloat(e.target.value) || 0})} />
+                                            </label>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <label className="block">
+                                                <span className="text-[10px] text-emerald-500 font-bold uppercase ml-1">Meta (R$)</span>
+                                                <input type="number" className="w-full input-field p-3 rounded-xl text-sm font-bold mono border-emerald-500/20" value={profile.target} onChange={e => setProfile({...profile, target: parseFloat(e.target.value) || 0})} />
+                                            </label>
+                                            <label className="block">
+                                                <span className="text-[10px] text-rose-500 font-bold uppercase ml-1">Stop Loss (R$)</span>
+                                                <input type="number" className="w-full input-field p-3 rounded-xl text-sm font-bold mono border-rose-500/20" value={profile.stopLoss} onChange={e => setProfile({...profile, stopLoss: parseFloat(e.target.value) || 0})} />
+                                            </label>
+                                        </div>
                                     </div>
-                                    <button onClick={saveProfile} className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl font-bold text-xs transition-colors mt-2">
-                                        SALVAR ALTERAÇÕES
+                                    <button onClick={saveProfile} className="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold text-xs transition-colors mt-2">
+                                        SALVAR CONFIGURAÇÕES
                                     </button>
                                 </div>
                             ) : (
@@ -357,32 +406,24 @@
                                             placeholder="0,00" 
                                             value={inputValue} 
                                             onChange={e => setInputValue(e.target.value)} 
+                                            disabled={stats.isStopLoss}
                                         />
                                         <div className="grid grid-cols-2 gap-3">
                                             <button 
                                                 onClick={() => handleTrans('profit', inputValue)}
-                                                className="py-4 bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/30 text-emerald-400 hover:text-white rounded-2xl font-black text-xs transition-all"
+                                                disabled={stats.isStopLoss}
+                                                className={`py-4 rounded-2xl font-black text-xs transition-all ${stats.isStopLoss ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/30 text-emerald-400 hover:text-white'}`}
                                             >
                                                 WIN
                                             </button>
                                             <button 
                                                 onClick={() => handleTrans('loss', inputValue)}
-                                                className="py-4 bg-rose-600/20 hover:bg-rose-600 border border-rose-500/30 text-rose-400 hover:text-white rounded-2xl font-black text-xs transition-all"
+                                                disabled={stats.isStopLoss}
+                                                className={`py-4 rounded-2xl font-black text-xs transition-all ${stats.isStopLoss ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-rose-600/20 hover:bg-rose-600 border border-rose-500/30 text-rose-400 hover:text-white'}`}
                                             >
-                                                LOSS
+                                                LOSS (RED)
                                             </button>
                                         </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Meta Alert */}
-                            {stats.isStopGain && (
-                                <div className="bg-emerald-500/10 border border-emerald-500/30 p-6 rounded-[2rem] flex items-center gap-4 text-emerald-400 animate-bounce">
-                                    <div className="text-2xl">🏆</div>
-                                    <div>
-                                        <p className="font-black text-xs uppercase tracking-widest">META ATINGIDA!</p>
-                                        <p className="text-[10px] font-bold opacity-70">Saia do mercado e proteja seu lucro.</p>
                                     </div>
                                 </div>
                             )}
@@ -391,14 +432,16 @@
                         {/* History Table */}
                         <div className="lg:col-span-2 glass-card rounded-[2rem] overflow-hidden flex flex-col">
                             <div className="p-6 border-b border-slate-800 flex justify-between items-center">
-                                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400">Histórico de Operações</h3>
-                                <span className="text-[10px] bg-slate-800 px-2 py-1 rounded text-slate-500 font-bold">{transactions.length} REGISTROS</span>
+                                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400">Histórico de Hoje</h3>
+                                <div className="flex gap-2">
+                                    <span className="text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded font-bold">{stats.winCount} WINS</span>
+                                    <span className="text-[10px] bg-rose-500/10 text-rose-500 px-2 py-1 rounded font-bold">{stats.redCount} REDS</span>
+                                </div>
                             </div>
                             <div className="flex-1 overflow-y-auto max-h-[400px]">
                                 {transactions.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center py-20 text-slate-600">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mb-4 opacity-20"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-                                        <p className="text-xs font-bold uppercase tracking-widest">Nenhuma operação registrada</p>
+                                        <p className="text-xs font-bold uppercase tracking-widest">Aguardando operações...</p>
                                     </div>
                                 ) : (
                                     <table className="w-full text-left border-collapse">
@@ -418,7 +461,7 @@
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <span className={`text-[10px] font-black px-2 py-1 rounded ${t.type === 'profit' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
-                                                            {t.type === 'profit' ? 'WIN' : 'LOSS'}
+                                                            {t.type === 'profit' ? 'WIN' : 'RED'}
                                                         </span>
                                                     </td>
                                                     <td className={`px-6 py-4 text-sm font-bold text-right mono ${t.type === 'profit' ? 'text-emerald-400' : 'text-rose-400'}`}>
@@ -443,7 +486,7 @@
                     
                     <footer className="text-center py-8">
                         <p className="text-[10px] text-slate-600 font-bold tracking-[0.2em] uppercase">
-                            Trader Pro Management System &copy; 2024 • Cloud Sync Active
+                            Trader Pro Gabriel rodrigues ; 2026 • Cloud Sync Active
                         </p>
                     </footer>
                 </div>
@@ -452,6 +495,9 @@
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
+        // Initialize Lucide icons after render
+        setTimeout(() => lucide.createIcons(), 500);
     </script>
 </body>
 </html>
+
