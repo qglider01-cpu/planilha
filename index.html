@@ -1,401 +1,1136 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#0f172a">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Trader Pro | Gestão de Elite</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- React & Babel -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="Embaixador Auto Elétrica — Especialistas em manutenção elétrica de tratores, caminhões e frotas corporativas. Atendimento B2B com agilidade e confiança.">
+    <meta name="theme-color" content="#0a0a0a">
+    <title>Embaixador Auto Elétrica | Especialista em Frotas e Linha Agrícola</title>
+
+    <!-- Preconnect para performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap');
-        
+        /* ── RESET & BASE ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; font-size: 16px; }
+
         :root {
-            --primary: #3b82f6;
-            --success: #10b981;
-            --danger: #ef4444;
-            --bg-dark: #0f172a;
-            --card-bg: rgba(30, 41, 59, 0.7);
+            --red:    #e60000;
+            --red-d:  #b30000;
+            --red-l:  #ff3333;
+            --dark:   #0a0a0a;
+            --dark2:  #141414;
+            --dark3:  #1e1e1e;
+            --gray:   #8a8a8a;
+            --light:  #f4f4f4;
+            --white:  #ffffff;
+            --font-h: 'Barlow Condensed', sans-serif;
+            --font-b: 'Barlow', sans-serif;
+            --radius: 12px;
+            --shadow: 0 8px 32px rgba(0,0,0,.18);
         }
 
-        body { 
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-dark);
-            color: #f8fafc;
+        body {
+            background: var(--light);
+            color: #222;
+            font-family: var(--font-b);
             -webkit-font-smoothing: antialiased;
-            overscroll-behavior-y: contain; /* Evita pull-to-refresh no mobile */
+            overflow-x: hidden;
         }
 
-        .mono { font-family: 'JetBrains Mono', monospace; }
-
-        /* Glassmorphism Pro */
-        .glass-card {
-            background: var(--card-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+        /* ── UTILITIES ── */
+        .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        .section-label {
+            display: inline-block;
+            font-family: var(--font-h);
+            font-weight: 700;
+            font-size: .75rem;
+            letter-spacing: .18em;
+            text-transform: uppercase;
+            background: var(--red);
+            color: #fff;
+            padding: 4px 14px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+        }
+        .section-title {
+            font-family: var(--font-h);
+            font-weight: 900;
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            line-height: 1.05;
+            letter-spacing: -.01em;
+        }
+        .section-sub {
+            color: var(--gray);
+            font-size: 1.05rem;
+            max-width: 560px;
+            line-height: 1.7;
+            margin-top: 12px;
         }
 
-        /* Botões Mobile First */
-        .btn-action {
-            @apply active:scale-95 transition-all duration-150 select-none touch-manipulation;
-            height: 64px; /* Altura ideal para o polegar */
+        /* ── HEADER ── */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(10,10,10,.96);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 2px solid var(--red);
+        }
+        .header-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .logo-wrap { display: flex; align-items: center; gap: 12px; }
+        .logo-wrap img {
+            height: 52px;
+            width: 52px;
+            border-radius: 50%;
+            object-fit: contain;
+            background: #fff;
+            padding: 3px;
+            border: 2px solid var(--red);
+        }
+        .logo-text {
+            font-family: var(--font-h);
+            font-weight: 900;
+            font-size: 1.1rem;
+            letter-spacing: .08em;
+            color: #fff;
+            text-transform: uppercase;
+            line-height: 1.2;
+        }
+        .logo-text span { color: var(--red); }
+
+        nav.desktop { display: none; }
+        @media(min-width:768px){ nav.desktop { display: flex; align-items: center; gap: 6px; } }
+        nav.desktop a {
+            color: #ccc;
+            text-decoration: none;
+            font-family: var(--font-h);
+            font-weight: 600;
+            font-size: .95rem;
+            letter-spacing: .05em;
+            padding: 8px 14px;
+            border-radius: 8px;
+            transition: color .2s, background .2s;
+            text-transform: uppercase;
+        }
+        nav.desktop a:hover { color: #fff; background: rgba(230,0,0,.15); }
+        nav.desktop .nav-cta {
+            background: var(--red);
+            color: #fff !important;
+            padding: 9px 20px;
+            border-radius: 8px;
+            margin-left: 8px;
+        }
+        nav.desktop .nav-cta:hover { background: var(--red-d) !important; }
+
+        .hamburger {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 5px;
+            width: 40px;
+            height: 40px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 6px;
+        }
+        @media(min-width:768px){ .hamburger { display: none; } }
+        .hamburger span {
+            display: block;
+            height: 2px;
+            background: #fff;
+            border-radius: 2px;
+            transition: transform .3s, opacity .3s;
+        }
+        .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+        .hamburger.open span:nth-child(2) { opacity: 0; }
+        .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+        #mobile-menu {
+            display: none;
+            flex-direction: column;
+            background: var(--dark2);
+            border-top: 1px solid #2a2a2a;
+            padding-bottom: 12px;
+        }
+        #mobile-menu.open { display: flex; }
+        #mobile-menu a {
+            color: #ddd;
+            text-decoration: none;
+            font-family: var(--font-h);
+            font-weight: 700;
+            font-size: 1.15rem;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            padding: 14px 24px;
+            border-bottom: 1px solid #222;
+            transition: background .2s, color .2s;
+        }
+        #mobile-menu a:hover { background: rgba(230,0,0,.1); color: var(--red); }
+        #mobile-menu a:last-child { border-bottom: none; }
+
+        /* ── HERO ── */
+        #inicio {
+            position: relative;
+            background: var(--dark);
+            color: #fff;
+            padding: clamp(60px, 10vw, 120px) 0;
+            overflow: hidden;
+        }
+        .hero-bg {
+            position: absolute; inset: 0;
+            background:
+                radial-gradient(ellipse 70% 80% at 80% 50%, rgba(230,0,0,.12) 0%, transparent 70%),
+                radial-gradient(ellipse 50% 60% at 10% 80%, rgba(180,0,0,.08) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .hero-grid {
+            position: absolute; inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+        }
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        @media(min-width:900px){ .hero-content { max-width: 680px; } }
+
+        .hero-title {
+            font-family: var(--font-h);
+            font-weight: 900;
+            font-size: clamp(2.6rem, 8vw, 5.2rem);
+            line-height: 1;
+            letter-spacing: -.02em;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+        .hero-title em {
+            font-style: normal;
+            color: var(--red);
+            display: block;
+        }
+        .hero-sub {
+            font-size: clamp(.95rem, 2vw, 1.15rem);
+            color: #aaa;
+            max-width: 520px;
+            line-height: 1.7;
+            margin-bottom: 36px;
+        }
+        .hero-btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--font-h);
+            font-weight: 700;
+            font-size: 1rem;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            text-decoration: none;
+            padding: 14px 28px;
+            border-radius: var(--radius);
+            transition: transform .2s, box-shadow .2s, background .2s;
+            white-space: nowrap;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .btn-primary {
+            background: var(--red);
+            color: #fff;
+            box-shadow: 0 4px 24px rgba(230,0,0,.35);
+        }
+        .btn-primary:hover { background: var(--red-d); box-shadow: 0 6px 32px rgba(230,0,0,.5); }
+        .btn-outline {
+            background: transparent;
+            color: #fff;
+            border: 2px solid rgba(255,255,255,.2);
+        }
+        .btn-outline:hover { border-color: var(--red); color: var(--red); }
+
+        /* Hero stats */
+        .hero-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 32px;
+            margin-top: 48px;
+            padding-top: 32px;
+            border-top: 1px solid rgba(255,255,255,.1);
+        }
+        .stat-item { display: flex; flex-direction: column; }
+        .stat-num {
+            font-family: var(--font-h);
+            font-weight: 900;
+            font-size: 2rem;
+            color: #fff;
+            line-height: 1;
+        }
+        .stat-num span { color: var(--red); }
+        .stat-label { font-size: .8rem; color: var(--gray); text-transform: uppercase; letter-spacing: .1em; margin-top: 4px; }
+
+        /* ── TRUST BAR ── */
+        .trust-bar {
+            background: var(--dark2);
+            border-bottom: 1px solid #222;
+            padding: 14px 0;
+            overflow: hidden;
+        }
+        .trust-inner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px 32px;
+        }
+        .trust-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #888;
+            font-size: .85rem;
+            font-family: var(--font-h);
+            font-weight: 600;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .trust-item i { color: var(--red); font-size: 1.1rem; }
+        .trust-divider { color: #333; }
+        @media(max-width:600px){ .trust-divider { display: none; } }
+
+        /* ── SERVIÇOS ── */
+        #servicos {
+            padding: clamp(60px, 8vw, 100px) 0;
+            background: #fff;
+        }
+        .services-header { margin-bottom: 56px; }
+        .services-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+        @media(min-width:640px){ .services-grid { grid-template-columns: 1fr 1fr; } }
+        @media(min-width:1024px){ .services-grid { grid-template-columns: 1fr 1fr 1fr; } }
+
+        .service-card {
+            position: relative;
+            background: #fafafa;
+            border: 1px solid #e8e8e8;
+            border-radius: 16px;
+            padding: 36px 32px;
+            transition: transform .25s, box-shadow .25s, border-color .25s;
+            overflow: hidden;
+        }
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: var(--red);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform .3s;
+        }
+        .service-card:hover { transform: translateY(-6px); box-shadow: 0 20px 60px rgba(0,0,0,.1); border-color: transparent; }
+        .service-card:hover::before { transform: scaleX(1); }
+
+        .service-icon {
+            width: 60px; height: 60px;
+            background: rgba(230,0,0,.08);
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem;
+            color: var(--red);
+            margin-bottom: 20px;
+            transition: background .25s;
+        }
+        .service-card:hover .service-icon { background: var(--red); color: #fff; }
+        .service-card h3 {
+            font-family: var(--font-h);
+            font-weight: 800;
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            letter-spacing: .02em;
+        }
+        .service-card p { color: #555; line-height: 1.65; font-size: .95rem; }
+
+        .service-tag {
+            display: inline-block;
+            margin-top: 18px;
+            font-family: var(--font-h);
+            font-weight: 700;
+            font-size: .72rem;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--red);
+            background: rgba(230,0,0,.08);
+            padding: 4px 10px;
+            border-radius: 4px;
         }
 
-        .btn-win {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        /* ── GALERIA ── */
+        #galeria {
+            padding: clamp(60px, 8vw, 100px) 0;
+            background: var(--dark);
+            color: #fff;
+        }
+        #galeria .section-title { color: #fff; }
+        #galeria .section-sub { color: #777; }
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+            margin-top: 48px;
+        }
+        @media(min-width:640px){ .gallery-grid { grid-template-columns: 1fr 1fr; } }
+        @media(min-width:1024px){ .gallery-grid { grid-template-columns: 1fr 1fr 1fr; } }
+
+        .gallery-item {
+            position: relative;
+            border-radius: 14px;
+            overflow: hidden;
+            aspect-ratio: 4/3;
+            background: var(--dark2);
+            border: 1px solid #2a2a2a;
+            cursor: pointer;
+        }
+        .gallery-item img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            transition: transform .4s;
+            display: block;
+        }
+        .gallery-item:hover img { transform: scale(1.06); }
+        .gallery-overlay {
+            position: absolute; inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,.8) 0%, rgba(0,0,0,.1) 60%, transparent 100%);
+            opacity: 0;
+            transition: opacity .3s;
+            display: flex; align-items: flex-end;
+            padding: 20px;
+        }
+        .gallery-item:hover .gallery-overlay { opacity: 1; }
+        .gallery-overlay p {
+            font-family: var(--font-h);
+            font-weight: 700;
+            font-size: 1.1rem;
+            letter-spacing: .04em;
+            color: #fff;
+        }
+        .gallery-badge {
+            position: absolute; top: 14px; left: 14px;
+            background: var(--red);
+            color: #fff;
+            font-family: var(--font-h);
+            font-weight: 700;
+            font-size: .7rem;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            padding: 4px 10px;
+            border-radius: 4px;
         }
 
-        .btn-loss {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        /* ── SOBRE ── */
+        #sobre {
+            padding: clamp(60px, 8vw, 100px) 0;
+            background: var(--light);
+        }
+        .sobre-inner {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 48px;
+            align-items: center;
+        }
+        @media(min-width:900px){ .sobre-inner { grid-template-columns: 1fr 1fr; } }
+
+        .sobre-visual {
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        .sobre-visual img {
+            width: 100%; display: block;
+            aspect-ratio: 4/3;
+            object-fit: cover;
+        }
+        .sobre-badge {
+            position: absolute;
+            bottom: 24px; left: 24px;
+            background: var(--red);
+            color: #fff;
+            padding: 14px 20px;
+            border-radius: 12px;
+            font-family: var(--font-h);
+            font-weight: 800;
+            font-size: 1.1rem;
+            box-shadow: 0 8px 24px rgba(230,0,0,.4);
+        }
+        .sobre-badge span { display: block; font-size: .75rem; font-weight: 600; opacity: .85; letter-spacing: .05em; }
+
+        .sobre-text h2 { margin-bottom: 20px; }
+        .sobre-text p { color: #555; line-height: 1.75; margin-bottom: 16px; font-size: 1rem; }
+
+        .check-list { list-style: none; margin-top: 28px; display: flex; flex-direction: column; gap: 14px; }
+        .check-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            font-size: .97rem;
+            color: #333;
+            font-weight: 500;
+        }
+        .check-list li i {
+            color: var(--red);
+            font-size: 1.3rem;
+            flex-shrink: 0;
+            margin-top: 1px;
         }
 
-        .btn-suggested {
-            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        /* ── CONTATO ── */
+        #contato {
+            padding: clamp(60px, 8vw, 100px) 0;
+            background: var(--dark2);
+            color: #fff;
+        }
+        .contato-header { text-align: center; margin-bottom: 56px; }
+        .contato-header .section-title { color: #fff; }
+        .contato-header .section-sub { color: #666; margin: 12px auto 0; }
+
+        .contato-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 32px;
+        }
+        @media(min-width:900px){ .contato-grid { grid-template-columns: 1fr 1fr; gap: 48px; } }
+
+        .contact-info { display: flex; flex-direction: column; gap: 20px; }
+        .contact-card {
+            background: rgba(255,255,255,.04);
+            border: 1px solid rgba(255,255,255,.08);
+            border-left: 3px solid var(--red);
+            border-radius: var(--radius);
+            padding: 22px 24px;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            transition: background .2s;
+        }
+        .contact-card:hover { background: rgba(255,255,255,.07); }
+        .contact-card i { font-size: 1.6rem; color: var(--red); flex-shrink: 0; margin-top: 2px; }
+        .contact-card h4 {
+            font-family: var(--font-h);
+            font-weight: 700;
+            font-size: 1rem;
+            letter-spacing: .05em;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        .contact-card p { color: #777; font-size: .9rem; line-height: 1.6; }
+        .contact-card a { color: var(--red); text-decoration: none; font-weight: 600; font-size: .85rem; display: inline-block; margin-top: 6px; }
+        .contact-card a:hover { text-decoration: underline; }
+
+        /* Formulário */
+        .contact-form {
+            background: #fff;
+            color: #222;
+            border-radius: 16px;
+            padding: clamp(28px, 5vw, 40px);
+        }
+        .contact-form h3 {
+            font-family: var(--font-h);
+            font-weight: 900;
+            font-size: 1.6rem;
+            letter-spacing: .02em;
+            margin-bottom: 24px;
+            color: var(--dark);
+        }
+        .form-group { margin-bottom: 18px; }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            font-size: .85rem;
+            color: #444;
+            margin-bottom: 6px;
+            letter-spacing: .03em;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-family: var(--font-b);
+            font-size: .95rem;
+            color: #222;
+            background: #fafafa;
+            transition: border-color .2s, box-shadow .2s;
+            outline: none;
+            appearance: none;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: var(--red);
+            box-shadow: 0 0 0 3px rgba(230,0,0,.1);
+            background: #fff;
+        }
+        .form-group textarea { resize: vertical; min-height: 110px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        @media(max-width:500px){ .form-row { grid-template-columns: 1fr; } }
+
+        .btn-submit {
+            width: 100%;
+            background: var(--dark);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            justify-content: center;
+        }
+        .btn-submit:hover { background: var(--red); }
+
+        /* ── FOOTER ── */
+        footer {
+            background: var(--dark);
+            color: #555;
+            padding: 32px 0;
+            border-top: 1px solid #1e1e1e;
+        }
+        .footer-inner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            text-align: center;
+        }
+        @media(min-width:768px){
+            .footer-inner { flex-direction: row; justify-content: space-between; text-align: left; }
+        }
+        .footer-brand { display: flex; align-items: center; gap: 10px; }
+        .footer-brand img {
+            height: 36px; width: 36px;
+            border-radius: 50%;
+            object-fit: contain;
+            background: #fff;
+            padding: 2px;
+            border: 2px solid var(--red);
+        }
+        .footer-brand span {
+            font-family: var(--font-h);
+            font-weight: 800;
+            font-size: .95rem;
+            letter-spacing: .08em;
+            color: #fff;
+            text-transform: uppercase;
+        }
+        .footer-copy { font-size: .82rem; }
+        .footer-social { display: flex; gap: 16px; }
+        .footer-social a {
+            color: #555;
+            font-size: 1.4rem;
+            transition: color .2s;
+        }
+        .footer-social a:hover { color: var(--red); }
+
+        /* ── WHATSAPP FLOAT ── */
+        .wa-float {
+            position: fixed;
+            bottom: 24px; right: 24px;
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #25D366;
+            color: #fff;
+            text-decoration: none;
+            padding: 14px 20px 14px 16px;
+            border-radius: 50px;
+            font-family: var(--font-h);
+            font-weight: 700;
+            font-size: .95rem;
+            letter-spacing: .05em;
+            box-shadow: 0 6px 24px rgba(37,211,102,.35);
+            transition: transform .2s, box-shadow .2s;
+        }
+        .wa-float:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 10px 32px rgba(37,211,102,.5); }
+        .wa-float i { font-size: 1.6rem; }
+        .wa-float .wa-label { display: none; }
+        @media(min-width:640px){ .wa-float .wa-label { display: inline; } }
+
+        /* ── SCROLL REVEAL ── */
+        .reveal { opacity: 0; transform: translateY(28px); transition: opacity .55s ease, transform .55s ease; }
+        .reveal.visible { opacity: 1; transform: none; }
+        .reveal-delay-1 { transition-delay: .1s; }
+        .reveal-delay-2 { transition-delay: .2s; }
+        .reveal-delay-3 { transition-delay: .3s; }
+        .reveal-delay-4 { transition-delay: .4s; }
+
+        /* ── LIGHTBOX ── */
+        #lightbox {
+            display: none;
+            position: fixed; inset: 0;
+            z-index: 300;
+            background: rgba(0,0,0,.92);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        #lightbox.open { display: flex; }
+        #lightbox img { max-width: 100%; max-height: 88vh; border-radius: 10px; object-fit: contain; }
+        #lightbox-close {
+            position: absolute; top: 20px; right: 24px;
+            color: #fff; font-size: 2rem; cursor: pointer;
+            background: none; border: none; line-height: 1;
         }
 
-        /* Input Estilizado */
-        .input-pro {
-            background: rgba(15, 23, 42, 0.9);
-            border: 2px solid rgba(255, 255, 255, 0.05);
-            @apply focus:border-blue-500 focus:ring-0 outline-none transition-all text-center font-bold;
+        /* ── TOAST ── */
+        #toast {
+            position: fixed; bottom: 88px; right: 24px;
+            background: var(--dark2);
+            color: #fff;
+            border-left: 4px solid var(--red);
+            padding: 14px 20px;
+            border-radius: 10px;
+            font-size: .9rem;
+            font-weight: 600;
+            box-shadow: var(--shadow);
+            transform: translateX(120%);
+            transition: transform .35s;
+            z-index: 300;
+            max-width: 300px;
         }
-
-        /* Animações */
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-slide-up { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-
-        /* Scrollbar Invisível mas funcional */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* Estilo para o Alerta de Stop Loss */
-        .stop-loss-active {
-            border: 2px solid #ef4444 !important;
-            animation: pulse-red 2s infinite;
-        }
-        @keyframes pulse-red {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-            70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-        }
+        #toast.show { transform: translateX(0); }
     </style>
 </head>
-<body class="no-scrollbar">
-    <div id="root"></div>
+<body>
 
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, collection, addDoc, deleteDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+<!-- HEADER -->
+<header>
+    <div class="header-inner">
+        <div class="logo-wrap">
+            <!-- Link corrigido para a pasta assets -->
+            <img src="assets/logo.jpg" 
+                 alt="Logo Embaixador Auto Elétrica"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+            <!-- Fallback se a imagem não carregar -->
+            <div style="display:none; width:52px; height:52px; background:var(--red); border-radius:50%; align-items:center; justify-content:center; font-size:1.4rem; color:#fff; font-family:var(--font-h); font-weight:900; border:2px solid var(--red);">E</div>
+            <div class="logo-text">EMBAIXADOR<br><span>AUTO ELÉTRICA</span></div>
+        </div>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyA-u9ii8P_ril727CzvAtIVFKU76TrcHzg",
-            authDomain: "planilha-a251b.firebaseapp.com",
-            projectId: "planilha-a251b",
-            storageBucket: "planilha-a251b.firebasestorage.app",
-            messagingSenderId: "1003937015443",
-            appId: "1:1003937015443:web:2e151fa65c4c9091fa4f66",
-            measurementId: "G-EJYQ0WSHM1"
-        };
+        <nav class="desktop">
+            <a href="#inicio">Início</a>
+            <a href="#servicos">Serviços</a>
+            <a href="#galeria">Trabalhos</a>
+            <a href="#sobre">Sobre</a>
+            <a href="#contato">Contato</a>
+            <a href="https://wa.me/5515998524033?text=Olá,%20vim%20pelo%20site%20e%20quero%20um%20orçamento!" target="_blank" class="nav-cta"><i class="ph ph-whatsapp-logo"></i> Orçamento</a>
+        </nav>
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+        <button class="hamburger" id="hamburger" aria-label="Menu" onclick="toggleMenu()">
+            <span></span><span></span><span></span>
+        </button>
+    </div>
 
-        window.FirebaseDB = { db, doc, onSnapshot, setDoc, updateDoc, collection, addDoc, deleteDoc, query, orderBy, limit };
-        window.FirebaseAuth = { auth, signInAnonymously, onAuthStateChanged };
-    </script>
+    <nav id="mobile-menu" aria-label="Menu mobile">
+        <a href="#inicio" onclick="closeMenu()">Início</a>
+        <a href="#servicos" onclick="closeMenu()">Serviços</a>
+        <a href="#galeria" onclick="closeMenu()">Trabalhos Realizados</a>
+        <a href="#sobre" onclick="closeMenu()">Sobre Nós</a>
+        <a href="#contato" onclick="closeMenu()">Contato</a>
+        <a href="https://wa.me/5515998524033?text=Olá,%20vim%20pelo%20site!" target="_blank" onclick="closeMenu()" style="color:var(--red);">
+            <i class="ph ph-whatsapp-logo"></i> Falar no WhatsApp
+        </a>
+    </nav>
+</header>
 
-    <script type="text/babel">
-        const { useState, useEffect, useMemo, useCallback } = React;
-        const { db, doc, onSnapshot, setDoc, updateDoc, collection, addDoc, deleteDoc, query, orderBy, limit } = window.FirebaseDB || {};
-        const { auth, signInAnonymously, onAuthStateChanged } = window.FirebaseAuth || {};
-
-        function App() {
-            const [user, setUser] = useState(null);
-            const [loading, setLoading] = useState(true);
-            const [isEditing, setIsEditing] = useState(false);
-            const [inputValue, setInputValue] = useState('');
-            const [transactions, setTransactions] = useState([]);
-            const [profile, setProfile] = useState({ 
-                name: 'Trader Pro', 
-                target: 1000, 
-                initialBalance: 100,
-                riskPercent: 5,
-                stopLoss: 50
-            });
-
-            // Persistência de Dados (Auth)
-            useEffect(() => {
-                if (!auth) return;
-                const unsubscribe = onAuthStateChanged(auth, (u) => {
-                    if (u) setUser(u);
-                    else signInAnonymously(auth).catch(console.error);
-                });
-                return () => unsubscribe();
-            }, []);
-
-            // Sincronização em Tempo Real
-            useEffect(() => {
-                if (!user || !db) return;
-                
-                const pRef = doc(db, 'users_data', user.uid, 'settings', 'profile');
-                const tRef = collection(db, 'users_data', user.uid, 'transactions');
-                const q = query(tRef, orderBy('timestamp', 'desc'), limit(50));
-
-                const unsubP = onSnapshot(pRef, (s) => {
-                    if (s.exists()) setProfile(s.data());
-                    else setDoc(pRef, profile);
-                });
-
-                const unsubT = onSnapshot(q, (s) => {
-                    setTransactions(s.docs.map(d => ({id: d.id, ...d.data()})));
-                    setLoading(false);
-                });
-
-                return () => { unsubP(); unsubT(); };
-            }, [user]);
-
-            // Cálculos de Gestão
-            const stats = useMemo(() => {
-                const today = new Date().setHours(0,0,0,0);
-                const todayTrans = transactions.filter(t => t.timestamp >= today);
-                
-                const totalProfit = transactions.filter(t => t.type === 'profit').reduce((a, b) => a + b.amount, 0);
-                const totalLoss = transactions.filter(t => t.type === 'loss').reduce((a, b) => a + b.amount, 0);
-                
-                const todayProfit = todayTrans.filter(t => t.type === 'profit').reduce((a, b) => a + b.amount, 0);
-                const todayLoss = todayTrans.filter(t => t.type === 'loss').reduce((a, b) => a + b.amount, 0);
-                const dailyResult = todayProfit - todayLoss;
-                
-                const currentBalance = profile.initialBalance + totalProfit - totalLoss;
-                const suggestedEntry = (currentBalance * (profile.riskPercent / 100));
-                const progress = Math.min(((currentBalance - profile.initialBalance) / (profile.target - profile.initialBalance)) * 100, 100);
-                
-                const isStopGain = currentBalance >= profile.target;
-                const isStopLoss = dailyResult <= -(profile.stopLoss);
-                
-                return { 
-                    currentBalance, suggestedEntry, progress, isStopGain, isStopLoss, 
-                    dailyResult, redCount: todayTrans.filter(t => t.type === 'loss').length,
-                    winCount: todayTrans.filter(t => t.type === 'profit').length
-                };
-            }, [transactions, profile]);
-
-            const handleAction = useCallback(async (type, amountOverride = null) => {
-                const amount = amountOverride !== null ? parseFloat(amountOverride) : stats.suggestedEntry;
-                if (isNaN(amount) || amount <= 0 || !user) return;
-
-                try {
-                    await addDoc(collection(db, 'users_data', user.uid, 'transactions'), {
-                        amount, type, timestamp: Date.now()
-                    });
-                    setInputValue('');
-                    // Feedback tátil (se disponível)
-                    if (window.navigator.vibrate) window.navigator.vibrate(50);
-                } catch (err) {
-                    alert("Erro ao salvar dados. Verifique sua conexão.");
-                }
-            }, [user, stats.suggestedEntry]);
-
-            if (loading) return (
-                <div className="h-screen flex flex-col items-center justify-center bg-[#0f172a]">
-                    <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p className="text-blue-400 font-bold tracking-widest animate-pulse">CARREGANDO GESTÃO...</p>
+<!-- HERO -->
+<section id="inicio">
+    <div class="hero-bg"></div>
+    <div class="hero-grid"></div>
+    <div class="container">
+        <div class="hero-content">
+            <span class="section-label">Especialistas em Manutenção B2B</span>
+            <h1 class="hero-title">
+                Sua Frota<br>
+                <em>Sempre em<br>Operação</em>
+            </h1>
+            <p class="hero-sub">
+                Liderados pelo Bruno, entregamos manutenção elétrica especializada para tratores, caminhões e frotas corporativas. Menos tempo parado, mais produtividade.
+            </p>
+            <div class="hero-btns">
+                <a href="https://wa.me/5515998524033?text=Preciso%20de%20suporte%20técnico%20urgente!" target="_blank" class="btn btn-primary">
+                    <i class="ph ph-wrench"></i> Acionar Suporte
+                </a>
+                <a href="#servicos" class="btn btn-outline">
+                    Ver Soluções <i class="ph ph-arrow-down"></i>
+                </a>
+            </div>
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <div class="stat-num">10<span>+</span></div>
+                    <div class="stat-label">Anos de experiência</div>
                 </div>
-            );
-
-            return (
-                <div className="min-h-screen flex flex-col max-w-md mx-auto bg-[#0f172a] pb-10">
-                    {/* Header Mobile */}
-                    <header className="p-6 pt-10 flex justify-between items-center sticky top-0 z-50 bg-[#0f172a]/80 backdrop-blur-md">
-                        <div>
-                            <h1 className="text-xl font-black text-white tracking-tighter uppercase flex items-center gap-2">
-                                <span className={`w-2 h-2 rounded-full ${stats.isStopLoss ? 'bg-red-500' : 'bg-emerald-500'} animate-pulse`}></span>
-                                {profile.name}
-                            </h1>
-                            <p className="text-[10px] text-slate-500 font-bold tracking-widest uppercase">Cloud Sync Ativo</p>
-                        </div>
-                        <button onClick={() => setIsEditing(!isEditing)} className="p-3 bg-slate-800 rounded-2xl text-slate-400 active:bg-slate-700 transition-colors">
-                            <i data-lucide={isEditing ? "x" : "settings"} size="20"></i>
-                        </button>
-                    </header>
-
-                    <main className="flex-1 px-6 space-y-6 animate-slide-up">
-                        {/* Card de Saldo Principal */}
-                        <div className={`glass-card rounded-[2.5rem] p-8 relative overflow-hidden ${stats.isStopLoss ? 'stop-loss-active' : ''}`}>
-                            <div className="relative z-10">
-                                <div className="flex justify-between items-start mb-2">
-                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Saldo Total</span>
-                                    <span className={`text-[10px] font-black px-2 py-1 rounded-full ${stats.dailyResult >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
-                                        HOJE: {stats.dailyResult >= 0 ? '+' : ''}R$ {stats.dailyResult.toFixed(2)}
-                                    </span>
-                                </div>
-                                <h2 className={`text-4xl font-black mono mb-6 ${stats.currentBalance >= profile.initialBalance ? 'text-emerald-400' : 'text-red-400'}`}>
-                                    R$ {stats.currentBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                </h2>
-                                
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-slate-900/50 p-3 rounded-2xl border border-white/5">
-                                        <p className="text-[9px] text-slate-500 font-bold uppercase mb-1">Meta</p>
-                                        <p className="text-sm font-bold text-blue-400 mono">R$ {profile.target.toFixed(2)}</p>
-                                    </div>
-                                    <div className="bg-slate-900/50 p-3 rounded-2xl border border-white/5">
-                                        <p className="text-[9px] text-slate-500 font-bold uppercase mb-1">Stop Loss</p>
-                                        <p className="text-sm font-bold text-red-500 mono">R$ {profile.stopLoss.toFixed(2)}</p>
-                                    </div>
-                                </div>
-
-                                {/* Barra de Progresso */}
-                                <div className="mt-6">
-                                    <div className="flex justify-between text-[9px] font-black uppercase mb-2">
-                                        <span className="text-slate-500">Progresso</span>
-                                        <span className="text-blue-400">{stats.progress.toFixed(1)}%</span>
-                                    </div>
-                                    <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                                        <div className="h-full bg-blue-500 transition-all duration-1000" style={{ width: `${stats.progress}%` }}></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="absolute -right-10 -top-10 w-32 h-32 bg-blue-500/10 blur-[60px] rounded-full"></div>
-                        </div>
-
-                        {/* Área de Operação */}
-                        {isEditing ? (
-                            <div className="glass-card rounded-[2.5rem] p-6 space-y-4 animate-slide-up">
-                                <h3 className="text-xs font-black uppercase tracking-widest text-blue-400 text-center">Configurações de Gestão</h3>
-                                <div className="space-y-3">
-                                    <input className="w-full input-pro p-4 rounded-2xl text-sm" placeholder="Nome do Trader" value={profile.name} onChange={e => setProfile({...profile, name: e.target.value})} />
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <input type="number" className="w-full input-pro p-4 rounded-2xl text-sm" placeholder="Banca" value={profile.initialBalance} onChange={e => setProfile({...profile, initialBalance: parseFloat(e.target.value) || 0})} />
-                                        <input type="number" className="w-full input-pro p-4 rounded-2xl text-sm" placeholder="Risco %" value={profile.riskPercent} onChange={e => setProfile({...profile, riskPercent: parseFloat(e.target.value) || 0})} />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <input type="number" className="w-full input-pro p-4 rounded-2xl text-sm border-emerald-500/20" placeholder="Meta" value={profile.target} onChange={e => setProfile({...profile, target: parseFloat(e.target.value) || 0})} />
-                                        <input type="number" className="w-full input-pro p-4 rounded-2xl text-sm border-red-500/20" placeholder="Stop Loss" value={profile.stopLoss} onChange={e => setProfile({...profile, stopLoss: parseFloat(e.target.value) || 0})} />
-                                    </div>
-                                </div>
-                                <button onClick={() => { updateDoc(doc(db, 'users_data', user.uid, 'settings', 'profile'), profile); setIsEditing(false); }} className="w-full py-4 bg-blue-600 rounded-2xl font-black text-xs tracking-widest active:bg-blue-500 transition-colors">
-                                    SALVAR ALTERAÇÕES
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                {/* Entrada Sugerida */}
-                                <div className="flex flex-col items-center justify-center py-4">
-                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2">Entrada Sugerida</span>
-                                    <div className="text-3xl font-black mono text-white">R$ {stats.suggestedEntry.toFixed(2)}</div>
-                                </div>
-
-                                {/* Botões de Ação Grandes */}
-                                <div className="grid grid-cols-1 gap-3">
-                                    <button 
-                                        onClick={() => handleAction('profit')}
-                                        disabled={stats.isStopLoss}
-                                        className={`btn-action btn-suggested rounded-2xl font-black text-sm tracking-widest flex items-center justify-center gap-3 ${stats.isStopLoss ? 'opacity-20 grayscale cursor-not-allowed' : ''}`}
-                                    >
-                                        <i data-lucide="trending-up" size="20"></i> LANÇAR WIN SUGERIDO
-                                    </button>
-                                    
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <button 
-                                            onClick={() => handleAction('profit', inputValue)}
-                                            disabled={stats.isStopLoss}
-                                            className={`btn-action btn-win rounded-2xl font-black text-sm tracking-widest flex items-center justify-center gap-2 ${stats.isStopLoss ? 'opacity-20 grayscale cursor-not-allowed' : ''}`}
-                                        >
-                                            WIN
-                                        </button>
-                                        <button 
-                                            onClick={() => handleAction('loss', inputValue)}
-                                            disabled={stats.isStopLoss}
-                                            className={`btn-action btn-loss rounded-2xl font-black text-sm tracking-widest flex items-center justify-center gap-2 ${stats.isStopLoss ? 'opacity-20 grayscale cursor-not-allowed' : ''}`}
-                                        >
-                                            RED
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Input Manual */}
-                                <input 
-                                    type="number" 
-                                    className="w-full input-pro p-5 rounded-2xl text-xl mb-4" 
-                                    placeholder="VALOR MANUAL" 
-                                    value={inputValue} 
-                                    onChange={e => setInputValue(e.target.value)}
-                                    disabled={stats.isStopLoss}
-                                />
-                            </div>
-                        )}
-
-                        {/* Histórico Simplificado Mobile */}
-                        <div className="glass-card rounded-[2.5rem] overflow-hidden">
-                            <div className="p-5 border-b border-white/5 flex justify-between items-center">
-                                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Histórico Recente</h3>
-                                <div className="flex gap-2">
-                                    <span className="text-[9px] font-bold text-emerald-400">{stats.winCount}W</span>
-                                    <span className="text-[9px] font-bold text-red-400">{stats.redCount}R</span>
-                                </div>
-                            </div>
-                            <div className="max-h-60 overflow-y-auto no-scrollbar">
-                                {transactions.length === 0 ? (
-                                    <div className="p-10 text-center text-[10px] font-bold text-slate-600 uppercase tracking-widest">Sem operações</div>
-                                ) : (
-                                    <div className="divide-y divide-white/5">
-                                        {transactions.map(t => (
-                                            <div key={t.id} className="p-4 flex justify-between items-center active:bg-white/5 transition-colors">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`w-1.5 h-1.5 rounded-full ${t.type === 'profit' ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
-                                                    <span className="text-[10px] text-slate-500 mono">{new Date(t.timestamp).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</span>
-                                                </div>
-                                                <span className={`text-sm font-bold mono ${t.type === 'profit' ? 'text-emerald-400' : 'text-red-400'}`}>
-                                                    {t.type === 'profit' ? '+' : '-'} R$ {t.amount.toFixed(2)}
-                                                </span>
-                                                <button onClick={() => deleteDoc(doc(db, 'users_data', user.uid, 'transactions', t.id))} className="p-2 text-slate-700">
-                                                    <i data-lucide="trash-2" size="14"></i>
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </main>
-
-                    <footer className="p-8 text-center">
-                        <p className="text-[9px] text-slate-600 font-bold tracking-[0.3em] uppercase">Trader Pro Elite &copy; 2024</p>
-                    </footer>
+                <div class="stat-item">
+                    <div class="stat-num">200<span>+</span></div>
+                    <div class="stat-label">Clientes atendidos</div>
                 </div>
-            );
+                <div class="stat-item">
+                    <div class="stat-num">24<span>h</span></div>
+                    <div class="stat-label">Suporte rápido</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- TRUST BAR -->
+<div class="trust-bar">
+    <div class="container">
+        <div class="trust-inner">
+            <div class="trust-item"><i class="ph-fill ph-check-circle"></i> Atendimento B2B</div>
+            <div class="trust-divider">|</div>
+            <div class="trust-item"><i class="ph-fill ph-check-circle"></i> Linha Agrícola &amp; Pesada</div>
+            <div class="trust-divider">|</div>
+            <div class="trust-item"><i class="ph-fill ph-check-circle"></i> Diagnóstico Computadorizado</div>
+            <div class="trust-divider">|</div>
+            <div class="trust-item"><i class="ph-fill ph-check-circle"></i> Peças com Garantia</div>
+            <div class="trust-divider">|</div>
+            <div class="trust-item"><i class="ph-fill ph-check-circle"></i> Emissão de Nota Fiscal</div>
+        </div>
+    </div>
+</div>
+
+<!-- SERVIÇOS -->
+<section id="servicos">
+    <div class="container">
+        <div class="services-header reveal">
+            <span class="section-label">O que fazemos</span>
+            <h2 class="section-title">Soluções Elétricas para <span style="color:var(--red)">Empresas</span></h2>
+            <p class="section-sub">Entendemos que tempo parado é prejuízo. Atuamos com agilidade para manter sua operação no ritmo.</p>
+        </div>
+
+        <div class="services-grid">
+            <div class="service-card reveal reveal-delay-1">
+                <div class="service-icon"><i class="ph ph-tractor"></i></div>
+                <h3>Linha Agrícola &amp; Tratores</h3>
+                <p>Diagnóstico e reparo especializado na complexidade elétrica de tratores e colheitadeiras. Sua lavoura não para.</p>
+                <span class="service-tag">Maquinário Pesado</span>
+            </div>
+            <div class="service-card reveal reveal-delay-2">
+                <div class="service-icon"><i class="ph ph-truck"></i></div>
+                <h3>Frotas de Caminhões</h3>
+                <p>Alternadores, motores de partida, chicotes elétricos e injeção eletrônica. Do utilitário ao caminhão pesado.</p>
+                <span class="service-tag">Transporte</span>
+            </div>
+            <div class="service-card reveal reveal-delay-3">
+                <div class="service-icon"><i class="ph ph-buildings"></i></div>
+                <h3>Contratos B2B</h3>
+                <p>Parcerias de manutenção preventiva e corretiva para empresas. Atendimento prioritário, NF e relatórios de frota.</p>
+                <span class="service-tag">Pessoa Jurídica</span>
+            </div>
+            <div class="service-card reveal reveal-delay-1">
+                <div class="service-icon"><i class="ph ph-car-profile"></i></div>
+                <h3>Veículos Corporativos</h3>
+                <p>Manutenção elétrica completa para a frota leve da sua empresa. Carros, vans e utilitários com qualidade garantida.</p>
+                <span class="service-tag">Frota Leve</span>
+            </div>
+            <div class="service-card reveal reveal-delay-2">
+                <div class="service-icon"><i class="ph ph-cpu"></i></div>
+                <h3>Diagnóstico Eletrônico</h3>
+                <p>Scanner computadorizado para identificar falhas com precisão, reduzindo o tempo de diagnóstico e o custo do reparo.</p>
+                <span class="service-tag">Tecnologia</span>
+            </div>
+            <div class="service-card reveal reveal-delay-3">
+                <div class="service-icon"><i class="ph ph-lightning"></i></div>
+                <h3>Manutenção Preventiva</h3>
+                <p>Cronograma de revisões para evitar panes. Mais vida útil para seus veículos e menos gastos emergenciais.</p>
+                <span class="service-tag">Prevenção</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- GALERIA -->
+<section id="galeria">
+    <div class="container">
+        <div class="reveal">
+            <span class="section-label">Nosso Trabalho</span>
+            <h2 class="section-title" style="color:#fff">Trabalhos <span style="color:var(--red)">Realizados</span></h2>
+            <p class="section-sub">Veja um pouco do nosso dia a dia prestando manutenção preventiva e corretiva.</p>
+        </div>
+
+        <div class="gallery-grid">
+            <!-- Foto 1 — Usando a imagem motor.png dos seus assets -->
+            <div class="gallery-item reveal reveal-delay-1" onclick="openLightbox(this)">
+                <img src="assets/motor.png" alt="Manutenção de Motor" loading="lazy">
+                <div class="gallery-overlay"><p>Reparo de Motor</p></div>
+                <span class="gallery-badge">Elétrica</span>
+            </div>
+            <!-- Foto 2 — Usando bruno.jpg.png -->
+            <div class="gallery-item reveal reveal-delay-2" onclick="openLightbox(this)">
+                <img src="assets/bruno.jpg.png" alt="Especialista Bruno" loading="lazy">
+                <div class="gallery-overlay"><p>Bruno em Campo</p></div>
+                <span class="gallery-badge">Equipe</span>
+            </div>
+            <!-- Foto 3 -->
+            <div class="gallery-item reveal reveal-delay-3" onclick="openLightbox(this)">
+                <img src="https://placehold.co/800x600/1a1a1a/e60000?text=Sua+Foto+3" alt="Diagnóstico Computadorizado" loading="lazy">
+                <div class="gallery-overlay"><p>Diagnóstico Computadorizado</p></div>
+                <span class="gallery-badge">Diagnóstico</span>
+            </div>
+            <!-- Foto 4 -->
+            <div class="gallery-item reveal reveal-delay-1" onclick="openLightbox(this)">
+                <img src="https://placehold.co/800x600/1a1a1a/e60000?text=Sua+Foto+4" alt="Frota de Caminhões" loading="lazy">
+                <div class="gallery-overlay"><p>Frota de Caminhões</p></div>
+                <span class="gallery-badge">Frotas</span>
+            </div>
+            <!-- Foto 5 -->
+            <div class="gallery-item reveal reveal-delay-2" onclick="openLightbox(this)">
+                <img src="https://placehold.co/800x600/1a1a1a/e60000?text=Sua+Foto+5" alt="Manutenção Preventiva" loading="lazy">
+                <div class="gallery-overlay"><p>Manutenção Preventiva</p></div>
+                <span class="gallery-badge">Preventiva</span>
+            </div>
+            <!-- Foto 6 -->
+            <div class="gallery-item reveal reveal-delay-3" onclick="openLightbox(this)">
+                <img src="https://placehold.co/800x600/1a1a1a/e60000?text=Sua+Foto+6" alt="Reparo Elétrico" loading="lazy">
+                <div class="gallery-overlay"><p>Serviço de Qualidade</p></div>
+                <span class="gallery-badge">Elétrica</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- LIGHTBOX -->
+<div id="lightbox" onclick="closeLightbox()">
+    <button id="lightbox-close" onclick="closeLightbox()" aria-label="Fechar">&times;</button>
+    <img id="lightbox-img" src="" alt="">
+</div>
+
+<!-- SOBRE -->
+<section id="sobre">
+    <div class="container">
+        <div class="sobre-inner">
+            <div class="sobre-visual reveal">
+                <!-- Imagem do Bruno corrigida -->
+                <img src="assets/bruno.jpg.png" 
+                     alt="Bruno trabalhando na manutenção" loading="lazy">
+                <div class="sobre-badge">
+                    Liderança do Bruno
+                    <span>Compromisso com seu negócio</span>
+                </div>
+            </div>
+            <div class="sobre-text reveal reveal-delay-2">
+                <span class="section-label">Sobre nós</span>
+                <h2 class="section-title">Por que escolher a <span style="color:var(--red)">Embaixador</span>?</h2>
+                <p>Com a experiência e dedicação do <strong>Bruno</strong>, a Embaixador Auto Elétrica nasceu para suprir uma necessidade crucial do mercado: <strong>confiança e agilidade no atendimento corporativo</strong>.</p>
+                <p>Não apenas resolvemos o problema — atuamos como parceiros do seu negócio. Seja uma falha elétrica num trator em plena lavoura ou a manutenção preventiva da sua frota, entregamos serviço pesado com transparência total.</p>
+                <ul class="check-list">
+                    <li><i class="ph-fill ph-check-circle"></i> Atendimento focado em Pessoa Jurídica (PJ)</li>
+                    <li><i class="ph-fill ph-check-circle"></i> Especialização em maquinário pesado e agrícola</li>
+                    <li><i class="ph-fill ph-check-circle"></i> Diagnóstico computadorizado e peças com garantia</li>
+                    <li><i class="ph-fill ph-check-circle"></i> Emissão de nota fiscal e relatórios de serviço</li>
+                    <li><i class="ph-fill ph-check-circle"></i> Atendimento ágil para minimizar máquina parada</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CONTATO -->
+<section id="contato">
+    <div class="container">
+        <div class="contato-header reveal">
+            <span class="section-label">Fale conosco</span>
+            <h2 class="section-title" style="color:#fff">Pronto para firmar uma <span style="color:var(--red)">parceria</span>?</h2>
+            <p class="section-sub">Entre em contato e descubra como cuidamos da parte elétrica da sua empresa.</p>
+        </div>
+
+        <div class="contato-grid">
+            <div class="contact-info reveal">
+                <div class="contact-card">
+                    <i class="ph ph-map-pin"></i>
+                    <div>
+                        <h4>Endereço</h4>
+                        <p>Av. das Indústrias, 123 — Centro<br>Sua Cidade — Estado, CEP 00000-000</p>
+                    </div>
+                </div>
+                <div class="contact-card">
+                    <i class="ph ph-whatsapp-logo"></i>
+                    <div>
+                        <h4>WhatsApp — Bruno</h4>
+                        <p>(15) 99852-4033</p>
+                        <a href="https://wa.me/5515998524033?text=Olá%20Bruno,%20vim%20pelo%20site%20e%20quero%20um%20orçamento!" target="_blank">Chamar agora →</a>
+                    </div>
+                </div>
+                <div class="contact-card">
+                    <i class="ph ph-envelope-simple"></i>
+                    <div>
+                        <h4>E-mail Corporativo</h4>
+                        <p>contato@embaixadorautoeletrica.com.br</p>
+                    </div>
+                </div>
+                <div class="contact-card">
+                    <i class="ph ph-clock"></i>
+                    <div>
+                        <h4>Horário de Atendimento</h4>
+                        <p>Seg–Sex: 07h às 18h<br>Sáb: 07h às 12h</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="contact-form reveal reveal-delay-2">
+                <h3>Solicite uma Proposta B2B</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="f-nome">Nome / Empresa</label>
+                        <input type="text" id="f-nome" placeholder="Sua empresa">
+                    </div>
+                    <div class="form-group">
+                        <label for="f-tel">Telefone / WhatsApp</label>
+                        <input type="tel" id="f-tel" placeholder="(00) 00000-0000">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="f-tipo">Tipo de serviço</label>
+                    <select id="f-tipo">
+                        <option value="">Selecione...</option>
+                        <option>Manutenção em Tratores / Agrícola</option>
+                        <option>Frota de Caminhões</option>
+                        <option>Frota de Carros / Utilitários</option>
+                        <option>Contrato de Manutenção Preventiva</option>
+                        <option>Diagnóstico Computadorizado</option>
+                        <option>Outro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="f-msg">Descreva sua necessidade</label>
+                    <textarea id="f-msg" placeholder="Ex: Manutenção na frota de 5 caminhões..."></textarea>
+                </div>
+                <button type="button" class="btn btn-submit" onclick="submitForm()">
+                    <i class="ph ph-paper-plane-tilt"></i> Enviar Mensagem
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+    <div class="container">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <img src="assets/logo.jpg" alt="Logo Embaixador"
+                     onerror="this.style.display='none'">
+                <span>EMBAIXADOR AUTO ELÉTRICA</span>
+            </div>
+            <p class="footer-copy">&copy; 2026 Embaixador Auto Elétrica. Todos os direitos reservados.</p>
+            <div class="footer-social">
+                <a href="#" aria-label="Instagram"><i class="ph ph-instagram-logo"></i></a>
+                <a href="#" aria-label="Facebook"><i class="ph ph-facebook-logo"></i></a>
+                <a href="https://wa.me/5515998524033" target="_blank" aria-label="WhatsApp"><i class="ph ph-whatsapp-logo"></i></a>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- BOTÃO WHATSAPP FLUTUANTE -->
+<a href="https://wa.me/5515998524033?text=Olá,%20estou%20no%20site%20e%20preciso%20de%20ajuda!" target="_blank" class="wa-float" aria-label="Suporte WhatsApp">
+    <i class="ph ph-whatsapp-logo"></i>
+    <span class="wa-label">Suporte Rápido</span>
+</a>
+
+<!-- TOAST -->
+<div id="toast">✅ Mensagem enviada! O Bruno vai entrar em contato em breve.</div>
+
+<script>
+    /* ── MENU MOBILE ── */
+    function toggleMenu() {
+        const menu = document.getElementById('mobile-menu');
+        const btn  = document.getElementById('hamburger');
+        const open = menu.classList.toggle('open');
+        btn.classList.toggle('open', open);
+        document.body.style.overflow = open ? 'hidden' : '';
+    }
+    function closeMenu() {
+        const menu = document.getElementById('mobile-menu');
+        const btn  = document.getElementById('hamburger');
+        menu.classList.remove('open');
+        btn.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    /* ── SCROLL REVEAL ── */
+    const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); revealObserver.unobserve(e.target); } });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+    /* ── LIGHTBOX ── */
+    function openLightbox(item) {
+        const img = item.querySelector('img');
+        document.getElementById('lightbox-img').src = img.src;
+        document.getElementById('lightbox').classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeLightbox() {
+        document.getElementById('lightbox').classList.remove('open');
+        document.body.style.overflow = '';
+    }
+    document.addEventListener('keydown', e => { if(e.key === 'Escape') closeLightbox(); });
+
+    /* ── FORMULÁRIO → WHATSAPP ── */
+    function submitForm() {
+        const nome  = document.getElementById('f-nome').value.trim();
+        const tel   = document.getElementById('f-tel').value.trim();
+        const tipo  = document.getElementById('f-tipo').value;
+        const msg   = document.getElementById('f-msg').value.trim();
+
+        if (!nome || !tel) {
+            alert('Preencha pelo menos o nome e o telefone.');
+            return;
         }
+        const texto = encodeURIComponent(
+            `Olá Bruno! Vim pelo site e gostaria de um orçamento.\n\n` +
+            `*Empresa/Nome:* ${nome}\n` +
+            `*Telefone:* ${tel}\n` +
+            `*Serviço:* ${tipo || 'Não especificado'}\n` +
+            `*Mensagem:* ${msg || 'Sem detalhes adicionais'}`
+        );
+        window.open(`https://wa.me/5515998524033?text=${texto}`, '_blank');
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-        // Initialize Lucide icons
-        const initIcons = () => { if(window.lucide) lucide.createIcons(); else setTimeout(initIcons, 100); };
-        initIcons();
-    </script>
+        const toast = document.getElementById('toast');
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 4000);
+    }
+
+    /* ── HEADER SHADOW ON SCROLL ── */
+    window.addEventListener('scroll', () => {
+        document.querySelector('header').style.boxShadow =
+            window.scrollY > 20 ? '0 4px 24px rgba(0,0,0,.4)' : 'none';
+    }, { passive: true });
+</script>
 </body>
 </html>
-
-
