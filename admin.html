@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JP Dog's - Painel Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root { --amarelo: #FFD600; --vermelho: #D32F2F; --preto: #1A1A1A; }
+        body { font-family: 'Nunito', sans-serif; background: #0F0F0F; color: white; }
+        .bangers { font-family: 'Bangers', cursive; letter-spacing: 2px; }
+
+        .sidebar {
+            background: #1A1A1A;
+            border-right: 1px solid #2A2A2A;
+            width: 260px;
+            min-height: 100vh;
+            position: fixed;
+            top: 0; left: 0;
+            z-index: 100;
+        }
+        .main-content {
+            margin-left: 260px;
+            min-height: 100vh;
+        }
+        @media (max-width: 768px) {
+            .sidebar { width: 100%; min-height: auto; position: relative; }
+            .main-content { margin-left: 0; }
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #999;
+            margin: 2px 8px;
+            min-height: 48px; /* touch-friendly */
+        }
+        .nav-item:hover { background: #2A2A2A; color: white; }
+        .nav-item.active { background: var(--vermelho); color: white; }
+
+        .card-stat {
+            background: #1A1A1A;
+            border-radius: 20px;
+            padding: 24px;
+            border: 1px solid #2A2A2A;
+        }
+
+        .badge-status {
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .badge-aguardando { background: #FFF3E0; color: #E65100; }
+        .badge-preparando { background: #E3F2FD; color: #1565C0; }
+        .badge-a-caminho { background: #E8F5E9; color: #2E7D32; }
+        .badge-entregue { background: #1A1A2A; color: #90CAF9; }
+
+        .pedido-card {
+            background: #1A1A1A;
+            border-radius: 20px;
+            border: 1px solid #2A2A2A;
+            transition: all 0.2s;
+        }
+        .pedido-card:hover { border-color: var(--amarelo); }
+
+        .input-dark {
+            background: #2A2A2A;
+            border: 1px solid #3A3A3A;
+            color: white;
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            width: 100%;
+            outline: none;
+            transition: border-color 0.2s;
+            font-size: 1rem;
+        }
+        .input-dark:focus { border-color: var(--amarelo); }
+        .input-dark::placeholder { color: #555; }
+
+        .btn-primary {
+            background: var(--vermelho);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            padding: 14px 24px;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 48px;
+        }
+        .btn-primary:hover { background: #B71C1C; transform: translateY(-1px); }
+        .btn-yellow {
+            background: var(--amarelo);
+            color: #1A1A1A;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 18px;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 44px;
+        }
+        .btn-yellow:hover { transform: scale(1.05); }
+
+        select.input-dark option { background: #1A1A1A; }
+
+        /* STORE STATUS TOGGLE */
+        .store-toggle-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 20px;
+            border-radius: 14px;
+            border: none;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-height: 48px;
+            width: 100%;
+        }
+        .store-toggle-btn.aberta {
+            background: #1B5E20;
+            color: #69F0AE;
+            border: 1px solid #2E7D32;
+        }
+        .store-toggle-btn.fechada {
+            background: #B71C1C;
+            color: #FF8A80;
+            border: 1px solid #D32F2F;
+        }
+
+        /* TABS ADMIN */
+        .admin-tab-btn {
+            padding: 10px 16px;
+            border-radius: 10px;
+            border: none;
+            background: #2A2A2A;
+            color: #999;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 40px;
+        }
+        .admin-tab-btn.active { background: var(--vermelho); color: white; }
+
+        /* TOAST */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #1A1A1A;
+            border: 1px solid var(--amarelo);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            z-index: 9999;
+            transform: translateX(200px);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            max-width: 280px;
+        }
+        .toast.show { transform: translateX(0); opacity: 1; }
+
+        /* PULSO PEDIDO NOVO */
+        @keyframes newPedido {
+            0% { border-color: #2A2A2A; }
+            50% { border-color: var(--amarelo); box-shadow: 0 0 20px rgba(255,214,0,0.3); }
+            100% { border-color: #2A2A2A; }
+        }
+        .pedido-novo { animation: newPedido 1.5s ease 3; }
+
+        .item-cardapio {
+            background: #1A1A1A;
+            border: 1px solid #2A2A2A;
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* SWITCH TOGGLE */
+        .switch {
+            position: relative;
+            width: 48px;
+            height: 26px;
+            flex-shrink: 0;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: #3A3A3A;
+            border-radius: 100px;
+            transition: .3s;
+        }
+        .slider:before {
+            content: '';
+            position: absolute;
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: .3s;
+        }
+        input:checked + .slider { background: var(--amarelo); }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        /* NOTIFICAÇÃO BADGE */
+        .notif-badge {
+            background: var(--vermelho);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.7rem;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            top: -6px;
+            right: -6px;
+        }
+
+        /* BOTÕES TOUCH-FRIENDLY */
+        .btn-delete-pedido {
+            padding: 12px 16px;
+            background: rgba(153,27,27,0.3);
+            color: #f87171;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            border: none;
+            cursor: pointer;
+            min-height: 44px;
+            transition: all 0.2s;
+        }
+        .btn-delete-pedido:hover { background: rgba(153,27,27,0.6); }
+
+        /* MOBILE PADDING */
+        @media (max-width: 768px) {
+            .main-content { padding-bottom: 40px; }
+            .pedido-card { border-radius: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- TELA DE LOGIN -->
+<div id="tela-login" class="min-h-screen flex items-center justify-center p-4">
+    <div class="bg-[#1A1A1A] rounded-3xl p-8 w-full max-w-sm border border-[#2A2A2A]">
+        <div class="text-center mb-8">
+            <div class="bangers text-5xl text-[#FFD600] mb-1">JP DOG'S</div>
+            <p class="text-gray-400 font-bold text-sm">Painel Administrativo</p>
+        </div>
+        <div class="space-y-3">
+            <input type="email" id="login-email" placeholder="E-mail" class="input-dark">
+            <input type="password" id="login-pass" placeholder="Senha" class="input-dark">
+            <button onclick="fazerLogin()" class="btn-primary w-full justify-center mt-2">
+                <i class="fas fa-lock"></i> Entrar no Painel
+            </button>
+        </div>
+        <p id="login-erro" class="text-center text-xs text-red-400 mt-3 hidden">E-mail ou senha incorretos.</p>
+        <p class="text-center text-xs text-gray-600 mt-4">JP Dog's © 2025</p>
+    </div>
+</div>
+
+<!-- PAINEL PRINCIPAL -->
+<div id="painel" class="hidden flex">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar flex flex-col">
+        <div class="p-6 border-b border-[#2A2A2A]">
+            <div class="bangers text-3xl text-[#FFD600]">JP DOG'S</div>
+            <p class="text-xs text-gray-500 font-bold">Admin Panel</p>
+        </div>
+
+        <!-- STATUS DA LOJA -->
+        <div class="px-4 py-3 border-b border-[#2A2A2A]">
+            <p class="text-xs text-gray-500 font-bold uppercase mb-2">Status da Loja</p>
+            <button id="btn-toggle-loja" class="store-toggle-btn fechada" onclick="toggleLoja()">
+                <i class="fas fa-store"></i>
+                <span id="loja-status-texto">🔴 Loja Fechada</span>
+            </button>
+        </div>
+
+        <nav class="flex-1 p-4 space-y-1">
+            <div class="nav-item active" onclick="showSection('pedidos', this)" id="nav-pedidos">
+                <i class="fas fa-receipt w-5"></i>
+                <span>Pedidos</span>
+                <div class="ml-auto relative">
+                    <div class="notif-badge hidden" id="badge-pedidos">0</div>
+                </div>
+            </div>
+            <div class="nav-item" onclick="showSection('cardapio', this)">
+                <i class="fas fa-utensils w-5"></i>
+                <span>Cardápio</span>
+            </div>
+            <div class="nav-item" onclick="showSection('clientes', this)">
+                <i class="fas fa-users w-5"></i>
+                <span>Clientes</span>
+            </div>
+            <div class="nav-item" onclick="showSection('stats', this)">
+                <i class="fas fa-chart-bar w-5"></i>
+                <span>Estatísticas</span>
+            </div>
+        </nav>
+        <div class="p-4 border-t border-[#2A2A2A] space-y-1">
+            <a href="index.html" target="_blank" class="nav-item block" style="margin:0">
+                <i class="fas fa-external-link-alt w-5"></i> Ver Site
+            </a>
+            <button onclick="logout()" class="nav-item w-full text-red-400" style="margin:0">
+                <i class="fas fa-sign-out-alt w-5"></i> Sair
+            </button>
+        </div>
+    </aside>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="main-content p-4 md:p-6">
+
+        <!-- SECTION: PEDIDOS -->
+        <section id="sec-pedidos">
+            <div class="flex justify-between items-center mb-6 flex-wrap gap-3">
+                <div>
+                    <h1 class="bangers text-4xl text-[#FFD600]">PEDIDOS</h1>
+                    <p class="text-gray-400 text-sm font-bold">Gerencie os pedidos em tempo real</p>
+                </div>
+                <div class="flex gap-2 flex-wrap">
+                    <button class="admin-tab-btn active" onclick="filtrarStatus('todos', this)">Todos</button>
+                    <button class="admin-tab-btn" onclick="filtrarStatus('aguardando', this)">🔔 Aguardando</button>
+                    <button class="admin-tab-btn" onclick="filtrarStatus('preparando', this)">👨‍🍳 Preparando</button>
+                    <button class="admin-tab-btn" onclick="filtrarStatus('a-caminho', this)">🛵 A Caminho</button>
+                    <button class="admin-tab-btn" onclick="filtrarStatus('entregue', this)">✅ Entregues</button>
+                </div>
+            </div>
+            <div id="lista-pedidos" class="space-y-4">
+                <div class="text-center py-20 text-gray-600">
+                    <i class="fas fa-inbox text-5xl mb-4"></i>
+                    <p class="font-bold">Nenhum pedido ainda...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: CARDÁPIO -->
+        <section id="sec-cardapio" class="hidden">
+            <h1 class="bangers text-4xl text-[#FFD600] mb-1">CARDÁPIO</h1>
+            <p class="text-gray-400 text-sm font-bold mb-6">Adicione e gerencie os itens</p>
+
+            <!-- SEED CARDÁPIO -->
+            <div class="bg-yellow-900/20 border border-yellow-700/40 rounded-2xl p-4 mb-6">
+                <p class="font-black text-yellow-400 mb-1">⚡ Cadastro Rápido</p>
+                <p class="text-gray-400 text-xs mb-3">Clique para cadastrar automaticamente todos os itens do cardápio padrão JP Dog's (só use uma vez!).</p>
+                <button onclick="seedCardapio()" class="btn-yellow flex items-center gap-2">
+                    <i class="fas fa-magic"></i> Cadastrar Cardápio Completo
+                </button>
+            </div>
+
+            <!-- FORM NOVO ITEM -->
+            <div class="bg-[#1A1A1A] rounded-2xl p-6 border border-[#2A2A2A] mb-6">
+                <h2 class="font-black text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-plus-circle text-yellow-400"></i> Novo Item
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <input type="text" id="nome-lanche" placeholder="Nome do item" class="input-dark">
+                    <input type="number" step="0.01" id="preco-lanche" placeholder="Preço (R$)" class="input-dark">
+                    <select id="cat-lanche" class="input-dark">
+                        <option value="hot-dog">🌭 Hot Dog</option>
+                        <option value="lanche">🍔 Lanche</option>
+                        <option value="bebida">🥤 Bebida</option>
+                        <option value="combo">🎯 Combo</option>
+                    </select>
+                    <input type="url" id="img-lanche" placeholder="URL da foto (opcional)" class="input-dark">
+                    <textarea id="desc-lanche" placeholder="Descrição e ingredientes..." rows="2" class="input-dark md:col-span-2"></textarea>
+                    <div class="flex items-center gap-3 md:col-span-2">
+                        <label class="switch">
+                            <input type="checkbox" id="destaque-lanche">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="font-bold text-sm text-gray-300">🔥 Marcar como Destaque</span>
+                    </div>
+                    <button onclick="salvarItem()" class="btn-primary md:col-span-2 justify-center">
+                        <i class="fas fa-plus"></i> Cadastrar Item
+                    </button>
+                </div>
+            </div>
+
+            <!-- LISTA CARDÁPIO -->
+            <div id="lista-cardapio-adm" class="space-y-3"></div>
+        </section>
+
+        <!-- SECTION: CLIENTES -->
+        <section id="sec-clientes" class="hidden">
+            <h1 class="bangers text-4xl text-[#FFD600] mb-1">CLIENTES</h1>
+            <p class="text-gray-400 text-sm font-bold mb-6">Clientes cadastrados e pontos</p>
+            <div id="lista-clientes" class="space-y-3">
+                <div class="text-center py-20 text-gray-600">
+                    <i class="fas fa-users text-5xl mb-4"></i>
+                    <p class="font-bold">Nenhum cliente ainda...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: STATS -->
+        <section id="sec-stats" class="hidden">
+            <h1 class="bangers text-4xl text-[#FFD600] mb-1">ESTATÍSTICAS</h1>
+            <p class="text-gray-400 text-sm font-bold mb-6">Visão geral do negócio</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="card-stat text-center">
+                    <div class="text-3xl font-black text-yellow-400" id="stat-total-pedidos">0</div>
+                    <div class="text-gray-400 text-sm font-bold mt-1">Total Pedidos</div>
+                </div>
+                <div class="card-stat text-center">
+                    <div class="text-3xl font-black text-green-400" id="stat-faturamento">R$0</div>
+                    <div class="text-gray-400 text-sm font-bold mt-1">Faturamento</div>
+                </div>
+                <div class="card-stat text-center">
+                    <div class="text-3xl font-black text-blue-400" id="stat-clientes">0</div>
+                    <div class="text-gray-400 text-sm font-bold mt-1">Clientes</div>
+                </div>
+                <div class="card-stat text-center">
+                    <div class="text-3xl font-black text-red-400" id="stat-hoje">0</div>
+                    <div class="text-gray-400 text-sm font-bold mt-1">Hoje</div>
+                </div>
+            </div>
+            <div class="card-stat">
+                <h3 class="font-black text-white mb-4">📊 Itens Mais Pedidos</h3>
+                <div id="ranking-itens" class="space-y-2 text-gray-400">Carregando...</div>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<script type="module">
+import { db, auth } from './js/firebase-config.js';
+import {
+    signInWithEmailAndPassword, onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import {
+    collection, onSnapshot, query, orderBy, addDoc, deleteDoc, updateDoc,
+    serverTimestamp, doc, getDocs, getDoc, setDoc, writeBatch, where
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        document.getElementById('tela-login').classList.add('hidden');
+        document.getElementById('painel').classList.remove('hidden');
+        document.getElementById('painel').classList.add('flex');
+        iniciarPainel();
+    } else {
+        document.getElementById('tela-login').classList.remove('hidden');
+        document.getElementById('painel').classList.add('hidden');
+        document.getElementById('painel').classList.remove('flex');
+    }
+});
+
+window.fazerLogin = async () => {
+    const email = document.getElementById('login-email').value.trim();
+    const pass = document.getElementById('login-pass').value.trim();
+    const erroEl = document.getElementById('login-erro');
+    erroEl.classList.add('hidden');
+    try {
+        await signInWithEmailAndPassword(auth, email, pass);
+        showToast('🎉 Bem-vindo ao painel!');
+    } catch(e) {
+        erroEl.classList.remove('hidden');
+    }
+};
+
+window.logout = async () => {
+    await signOut(auth);
+    showToast('👋 Saiu do painel.');
+};
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+let todosPedidos = [];
+let statusFiltro = 'todos';
+let pedidosConhecidos = new Set();
+let lojaAberta = false;
+
+function iniciarPainel() {
+    carregarStatusLoja();
+    carregarPedidos();
+    carregarCardapio();
+    carregarClientes();
+}
+
+// ─── STATUS DA LOJA ────────────────────────────────────────────────────────────
+function carregarStatusLoja() {
+    onSnapshot(doc(db, "config", "loja"), (snap) => {
+        lojaAberta = snap.exists() ? (snap.data().isStoreOpen === true) : false;
+        renderBotaoLoja();
+    });
+}
+
+function renderBotaoLoja() {
+    const btn = document.getElementById('btn-toggle-loja');
+    const texto = document.getElementById('loja-status-texto');
+    if (lojaAberta) {
+        btn.className = 'store-toggle-btn aberta';
+        texto.textContent = '🟢 Loja Aberta';
+    } else {
+        btn.className = 'store-toggle-btn fechada';
+        texto.textContent = '🔴 Loja Fechada';
+    }
+}
+
+window.toggleLoja = async () => {
+    const novoStatus = !lojaAberta;
+    await setDoc(doc(db, "config", "loja"), { isStoreOpen: novoStatus }, { merge: true });
+    showToast(novoStatus ? '🟢 Loja ABERTA!' : '🔴 Loja FECHADA!');
+};
+
+// ─── PEDIDOS ──────────────────────────────────────────────────────────────────
+function carregarPedidos() {
+    onSnapshot(query(collection(db, "pedidos"), orderBy("timestamp", "desc")), (snap) => {
+        const antes = todosPedidos.length;
+        todosPedidos = [];
+        let novos = 0;
+        snap.forEach(d => {
+            const pedido = { id: d.id, ...d.data() };
+            todosPedidos.push(pedido);
+            if (!pedidosConhecidos.has(d.id)) {
+                pedidosConhecidos.add(d.id);
+                if (antes > 0) novos++;
+            }
+        });
+        if (novos > 0) notificarNovoPedido(novos);
+        renderPedidos();
+        calcularStats();
+    });
+}
+
+function notificarNovoPedido(n) {
+    showToast(`🔔 ${n} novo(s) pedido(s)!`);
+    const badge = document.getElementById('badge-pedidos');
+    badge.textContent = n;
+    badge.classList.remove('hidden');
+    try {
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.frequency.setValueAtTime(660, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+        osc.start(); osc.stop(ctx.currentTime + 0.5);
+    } catch(e) {}
+}
+
+window.filtrarStatus = (status, btn) => {
+    statusFiltro = status;
+    document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderPedidos();
+};
+
+function renderPedidos() {
+    const el = document.getElementById('lista-pedidos');
+    let pedidos = todosPedidos;
+    if (statusFiltro !== 'todos') pedidos = pedidos.filter(p => p.status === statusFiltro);
+
+    if (!pedidos.length) {
+        el.innerHTML = `<div class="text-center py-20 text-gray-600"><i class="fas fa-inbox text-5xl mb-4"></i><p class="font-bold">Nenhum pedido nessa categoria</p></div>`;
+        return;
+    }
+
+    el.innerHTML = pedidos.map(p => {
+        const ts = p.timestamp?.toDate ? p.timestamp.toDate() : new Date();
+        const hora = ts.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+        const data = ts.toLocaleDateString('pt-BR');
+        const itens = (p.itens || []).map(i => {
+            let linha = `<span class="text-gray-300 text-sm">• ${i.nome} <span class="text-red-400">R$${Number(i.preco).toFixed(2)}</span>`;
+            if (i.adicionais && i.adicionais.length) {
+                linha += ` <span class="text-gray-500 text-xs">(${i.adicionais.map(a => `${a.quantidade}x ${a.nome}`).join(', ')})</span>`;
+            }
+            return linha + '</span>';
+        }).join('<br>');
+
+        return `
+        <div class="pedido-card p-5" id="pedido-${p.id}">
+            <div class="flex justify-between items-start flex-wrap gap-3 mb-3">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="font-black text-white text-lg">${p.clienteNome || 'Cliente'}</span>
+                        <span class="badge-status badge-${p.status}">${getStatusLabel(p.status)}</span>
+                    </div>
+                    <p class="text-gray-500 text-xs font-bold">📦 #${p.id.slice(-6).toUpperCase()} • ${hora} - ${data}</p>
+                    <p class="text-gray-400 text-sm mt-1">🏠 ${p.endereco || '—'}</p>
+                </div>
+                <div class="text-right">
+                    <p class="font-black text-yellow-400 text-2xl">R$ ${Number(p.total).toFixed(2)}</p>
+                    <p class="text-gray-500 text-xs">+${p.pontos || 0} pontos</p>
+                </div>
+            </div>
+            <div class="bg-[#0F0F0F] rounded-xl p-3 mb-3 text-sm leading-relaxed">${itens}</div>
+            <div class="flex gap-2 flex-wrap">
+                ${getStatusBtns(p)}
+                <a href="https://wa.me/5515996044324?text=${encodeURIComponent(`Olá ${p.clienteNome}! Seu pedido #${p.id.slice(-6).toUpperCase()} está ${getStatusLabel(p.status).toLowerCase()}!`)}"
+                   target="_blank" class="btn-yellow flex items-center gap-1">
+                    <i class="fab fa-whatsapp"></i> Avisar
+                </a>
+                <button onclick="deletarPedido('${p.id}')" class="btn-delete-pedido">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function getStatusBtns(p) {
+    const fluxo = [
+        { key: 'preparando', label: '👨‍🍳 Preparar', show: p.status === 'aguardando' },
+        { key: 'a-caminho', label: '🛵 Saiu pra Entrega', show: p.status === 'preparando' },
+        { key: 'entregue', label: '✅ Entregue', show: p.status === 'a-caminho' },
+        { key: 'aguardando', label: '↩️ Voltar', show: p.status !== 'aguardando' && p.status !== 'entregue' },
+    ];
+    return fluxo.filter(b => b.show).map(b => `
+        <button onclick="atualizarStatus('${p.id}', '${b.key}')" class="btn-primary text-sm">
+            ${b.label}
+        </button>`).join('');
+}
+
+function getStatusLabel(s) {
+    const m = { aguardando: '🔔 Aguardando', preparando: '👨‍🍳 Preparando', 'a-caminho': '🛵 A Caminho', entregue: '✅ Entregue' };
+    return m[s] || s;
+}
+
+window.atualizarStatus = async (id, status) => {
+    await updateDoc(doc(db, "pedidos", id), { status });
+    showToast(`✅ Pedido atualizado: ${getStatusLabel(status)}`);
+};
+
+window.deletarPedido = async (id) => {
+    if (!confirm('Remover esse pedido do histórico?')) return;
+    await deleteDoc(doc(db, "pedidos", id));
+};
+
+// ─── CARDÁPIO ─────────────────────────────────────────────────────────────────
+function carregarCardapio() {
+    onSnapshot(query(collection(db, "cardapio"), orderBy("ordem", "asc")), (snap) => {
+        const el = document.getElementById('lista-cardapio-adm');
+        el.innerHTML = snap.docs.map(d => {
+            const l = d.data();
+            return `
+            <div class="item-cardapio">
+                ${l.imagem ? `<img src="${l.imagem}" class="w-14 h-14 rounded-xl object-cover flex-shrink-0">` : `<div class="w-14 h-14 bg-yellow-900/30 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">🌭</div>`}
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <p class="font-black text-white">${l.nome}</p>
+                        ${l.destaque ? '<span class="text-xs bg-red-900/40 text-red-400 px-2 py-0.5 rounded-full font-bold">🔥 Destaque</span>' : ''}
+                    </div>
+                    <p class="text-gray-500 text-xs truncate">${l.descricao || '—'}</p>
+                    <p class="font-black text-yellow-400 text-sm">R$ ${Number(l.preco).toFixed(2)}</p>
+                </div>
+                <button onclick="deletarItem('${d.id}')" class="w-11 h-11 bg-red-900/30 text-red-400 rounded-xl flex items-center justify-center hover:bg-red-900/60 transition flex-shrink-0">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>`;
+        }).join('') || '<p class="text-gray-500 text-center py-8">Nenhum item cadastrado</p>';
+    });
+}
+
+window.salvarItem = async () => {
+    const nome = document.getElementById('nome-lanche').value.trim();
+    const preco = parseFloat(document.getElementById('preco-lanche').value);
+    const desc = document.getElementById('desc-lanche').value.trim();
+    const cat = document.getElementById('cat-lanche').value;
+    const img = document.getElementById('img-lanche').value.trim();
+    const destaque = document.getElementById('destaque-lanche').checked;
+
+    if (!nome || !preco) return showToast('⚠️ Nome e preço são obrigatórios!');
+
+    const snap = await getDocs(collection(db, "cardapio"));
+    await addDoc(collection(db, "cardapio"), {
+        nome, preco, descricao: desc, categoria: cat, imagem: img, destaque,
+        ordem: snap.size,
+        timestamp: serverTimestamp()
+    });
+    ['nome-lanche','preco-lanche','desc-lanche','img-lanche'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('destaque-lanche').checked = false;
+    showToast('✅ Item cadastrado com sucesso!');
+};
+
+window.deletarItem = async (id) => {
+    if (!confirm('Remover esse item do cardápio?')) return;
+    await deleteDoc(doc(db, "cardapio", id));
+    showToast('🗑️ Item removido');
+};
+
+// ─── SEED CARDÁPIO AUTOMÁTICO ─────────────────────────────────────────────────
+window.seedCardapio = async () => {
+    if (!confirm('Isso vai cadastrar o cardápio completo JP Dog\'s. Continuar?')) return;
+    showToast('⏳ Cadastrando cardápio...');
+
+    const itens = [
+        // HOT DOGS
+        { nome: 'Dog Simples', preco: 15.00, categoria: 'hot-dog', descricao: 'Salsicha, molho, mostarda e ketchup', ordem: 1 },
+        { nome: 'Dog Cheddar ou Catupiry', preco: 17.00, categoria: 'hot-dog', descricao: 'Salsicha com cheddar ou catupiry derretido', ordem: 2 },
+        { nome: 'Dog Duplo', preco: 18.00, categoria: 'hot-dog', descricao: 'Duas salsichas, molho especial', ordem: 3 },
+        { nome: 'Dog Bacon ou Calabresa', preco: 17.00, categoria: 'hot-dog', descricao: 'Salsicha com bacon crocante ou calabresa', ordem: 4 },
+        { nome: 'Dog Tudo', preco: 35.00, categoria: 'hot-dog', descricao: 'Completo + Bacon + Calabresa + Catupiry', destaque: true, ordem: 5 },
+        // LANCHES
+        { nome: 'X-Burguer', preco: 15.00, categoria: 'lanche', descricao: 'Hambúrguer, queijo, pão especial', ordem: 6 },
+        { nome: 'X-Salada / X-Milho', preco: 17.00, categoria: 'lanche', descricao: 'Hambúrguer, salada fresca ou milho', ordem: 7 },
+        { nome: 'X-Bacon / X-Calabresa', preco: 18.00, categoria: 'lanche', descricao: 'Hambúrguer com bacon crocante ou calabresa', ordem: 8 },
+        { nome: 'Galinhão', preco: 25.00, categoria: 'lanche', descricao: 'Frango desfiado, Queijo e Catupiry', destaque: true, ordem: 9 },
+        { nome: 'X-Tudo', preco: 35.00, categoria: 'lanche', descricao: 'Completo com tudo que temos de melhor!', destaque: true, ordem: 10 },
+        // BEBIDAS
+        { nome: 'Coca-Cola 2L', preco: 15.00, categoria: 'bebida', descricao: 'Garrafa 2 litros', ordem: 11 },
+        { nome: 'Tubaína 2L', preco: 9.00, categoria: 'bebida', descricao: 'Garrafa 2 litros', ordem: 12 },
+        { nome: 'Lata', preco: 6.00, categoria: 'bebida', descricao: 'Refrigerante lata 350ml', ordem: 13 },
+    ];
+
+    const batch = writeBatch(db);
+    for (const item of itens) {
+        const ref = doc(collection(db, "cardapio"));
+        batch.set(ref, { ...item, imagem: '', timestamp: serverTimestamp() });
+    }
+    await batch.commit();
+    showToast('✅ Cardápio cadastrado com sucesso!');
+};
+
+// ─── CLIENTES ─────────────────────────────────────────────────────────────────
+function carregarClientes() {
+    onSnapshot(collection(db, "clientes"), (snap) => {
+        const el = document.getElementById('lista-clientes');
+        document.getElementById('stat-clientes').textContent = snap.size;
+        if (!snap.size) { el.innerHTML = '<div class="text-center py-20 text-gray-600"><i class="fas fa-users text-5xl mb-4"></i><p class="font-bold">Nenhum cliente ainda...</p></div>'; return; }
+        el.innerHTML = snap.docs.map(d => {
+            const c = d.data();
+            return `
+            <div class="card-stat flex items-center gap-4">
+                <div class="w-12 h-12 bg-yellow-400/20 rounded-2xl flex items-center justify-center text-2xl">👤</div>
+                <div class="flex-1">
+                    <p class="font-black text-white">${c.nome || 'Cliente'}</p>
+                    <p class="text-gray-500 text-xs">ID: ${d.id.slice(-8)}</p>
+                </div>
+                <div class="text-right">
+                    <p class="font-black text-yellow-400 text-xl">⭐ ${c.pontos || 0}</p>
+                    <p class="text-gray-500 text-xs">pontos</p>
+                </div>
+            </div>`;
+        }).join('');
+    });
+}
+
+// ─── STATS ────────────────────────────────────────────────────────────────────
+function calcularStats() {
+    const total = todosPedidos.length;
+    const faturamento = todosPedidos.reduce((a, p) => a + (p.total || 0), 0);
+    const hoje = todosPedidos.filter(p => {
+        const ts = p.timestamp?.toDate ? p.timestamp.toDate() : new Date(0);
+        return ts.toDateString() === new Date().toDateString();
+    }).length;
+
+    document.getElementById('stat-total-pedidos').textContent = total;
+    document.getElementById('stat-faturamento').textContent = 'R$' + faturamento.toFixed(0);
+    document.getElementById('stat-hoje').textContent = hoje;
+
+    const contagem = {};
+    todosPedidos.forEach(p => (p.itens||[]).forEach(i => { contagem[i.nome] = (contagem[i.nome]||0)+1; }));
+    const ranking = Object.entries(contagem).sort((a,b) => b[1]-a[1]).slice(0,5);
+    const rankEl = document.getElementById('ranking-itens');
+    rankEl.innerHTML = ranking.length ? ranking.map(([nome, qt], idx) => `
+        <div class="flex items-center gap-3 py-2 border-b border-[#2A2A2A]">
+            <span class="bangers text-xl text-yellow-400">${idx+1}</span>
+            <span class="flex-1 text-white font-bold text-sm">${nome}</span>
+            <span class="font-black text-gray-400">${qt}x</span>
+        </div>`).join('') : '<p class="text-gray-600">Nenhum pedido ainda</p>';
+}
+
+// ─── NAVEGAÇÃO ─────────────────────────────────────────────────────────────────
+window.showSection = (sec, btn) => {
+    ['pedidos','cardapio','clientes','stats'].forEach(s => {
+        document.getElementById(`sec-${s}`).classList.add('hidden');
+    });
+    document.getElementById(`sec-${sec}`).classList.remove('hidden');
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (sec === 'pedidos') document.getElementById('badge-pedidos').classList.add('hidden');
+};
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Login com Enter
+document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !document.getElementById('tela-login').classList.contains('hidden')) {
+        fazerLogin();
+    }
+});
+</script>
+</body>
+</html>

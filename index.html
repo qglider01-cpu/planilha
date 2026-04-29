@@ -1,1136 +1,1200 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="description" content="Embaixador Auto Elétrica — Especialistas em manutenção elétrica de tratores, caminhões e frotas corporativas. Atendimento B2B com agilidade e confiança.">
-    <meta name="theme-color" content="#0a0a0a">
-    <title>Embaixador Auto Elétrica | Especialista em Frotas e Linha Agrícola</title>
-
-    <!-- Preconnect para performance -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JP Dog's - Disk Entrega Itapetininga</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
-    <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
-
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
-        /* ── RESET & BASE ── */
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html { scroll-behavior: smooth; font-size: 16px; }
-
         :root {
-            --red:    #e60000;
-            --red-d:  #b30000;
-            --red-l:  #ff3333;
-            --dark:   #0a0a0a;
-            --dark2:  #141414;
-            --dark3:  #1e1e1e;
-            --gray:   #8a8a8a;
-            --light:  #f4f4f4;
-            --white:  #ffffff;
-            --font-h: 'Barlow Condensed', sans-serif;
-            --font-b: 'Barlow', sans-serif;
-            --radius: 12px;
-            --shadow: 0 8px 32px rgba(0,0,0,.18);
+            --amarelo: #FFD600;
+            --vermelho: #D32F2F;
+            --vermelho-escuro: #B71C1C;
+            --preto: #1A1A1A;
+            --branco: #FFFFFF;
+        }
+        * { box-sizing: border-box; }
+        body { font-family: 'Nunito', sans-serif; background: #FFF8E1; overflow-x: hidden; }
+        .bangers { font-family: 'Bangers', cursive; letter-spacing: 2px; }
+
+        /* HEADER */
+        .hero-header {
+            background: var(--amarelo);
+            position: relative;
+            overflow: hidden;
+            padding-bottom: 40px;
+        }
+        .hero-header::before {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0; right: 0;
+            height: 50px;
+            background: #FFF8E1;
+            border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+        }
+        .zigzag-top {
+            background: var(--vermelho);
+            height: 12px;
+            background-image: repeating-linear-gradient(
+                45deg,
+                var(--vermelho) 0px,
+                var(--vermelho) 10px,
+                var(--amarelo) 10px,
+                var(--amarelo) 20px
+            );
+        }
+        .logo-title {
+            font-family: 'Bangers', cursive;
+            font-size: 4.5rem;
+            color: var(--vermelho);
+            text-shadow: 4px 4px 0 var(--vermelho-escuro), 2px 2px 0 #000;
+            letter-spacing: 4px;
+            line-height: 1;
+        }
+        .logo-sub {
+            font-family: 'Bangers', cursive;
+            font-size: 1.4rem;
+            color: var(--preto);
+            letter-spacing: 3px;
         }
 
-        body {
-            background: var(--light);
-            color: #222;
-            font-family: var(--font-b);
-            -webkit-font-smoothing: antialiased;
-            overflow-x: hidden;
-        }
-
-        /* ── UTILITIES ── */
-        .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 20px; }
-        .section-label {
-            display: inline-block;
-            font-family: var(--font-h);
-            font-weight: 700;
-            font-size: .75rem;
-            letter-spacing: .18em;
-            text-transform: uppercase;
-            background: var(--red);
-            color: #fff;
-            padding: 4px 14px;
-            border-radius: 4px;
-            margin-bottom: 16px;
-        }
-        .section-title {
-            font-family: var(--font-h);
+        /* AVISO LOJA FECHADA */
+        #aviso-fechada {
+            background: linear-gradient(135deg, #B71C1C, #D32F2F);
+            color: white;
+            text-align: center;
+            padding: 16px;
             font-weight: 900;
-            font-size: clamp(2rem, 5vw, 3.2rem);
-            line-height: 1.05;
-            letter-spacing: -.01em;
-        }
-        .section-sub {
-            color: var(--gray);
-            font-size: 1.05rem;
-            max-width: 560px;
-            line-height: 1.7;
-            margin-top: 12px;
+            font-size: 1.1rem;
+            display: none;
         }
 
-        /* ── HEADER ── */
-        header {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            background: rgba(10,10,10,.96);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 2px solid var(--red);
+        /* CARDS DO CARDÁPIO */
+        .item-card {
+            background: white;
+            border-radius: 20px;
+            border: 3px solid #eee;
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            overflow: hidden;
         }
-        .header-inner {
+        .item-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 6px;
+            height: 100%;
+            background: var(--vermelho);
+        }
+        .item-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            border-color: var(--amarelo);
+            box-shadow: 0 12px 30px rgba(211,47,47,0.15);
+        }
+        .btn-add {
+            background: var(--vermelho);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            width: 48px;
+            height: 48px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 4px 12px rgba(211,47,47,0.4);
+        }
+        .btn-add:active { transform: scale(0.85); }
+        .btn-add:hover { background: var(--vermelho-escuro); transform: scale(1.1); }
+        .btn-add:disabled { background: #ccc; box-shadow: none; cursor: not-allowed; transform: none; }
+
+        /* CARRINHO FLUTUANTE */
+        #checkout-bar {
+            position: fixed;
+            bottom: 20px;
+            left: 16px;
+            right: 16px;
+            background: linear-gradient(135deg, #1B5E20, #2E7D32);
+            border-radius: 20px;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            z-index: 1000;
+            transform: translateY(120px);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        #checkout-bar.visible { transform: translateY(0); }
+        .whats-btn {
+            background: #25D366;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 10px 20px;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        .whats-btn:hover { background: #128C7E; transform: scale(1.05); }
+
+        /* MODAL ACRÉSCIMOS */
+        .modal-adicionais {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 2500;
+            display: flex;
+            align-items: flex-end;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .modal-adicionais.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .adicionais-sheet {
+            background: white;
+            width: 100%;
+            border-radius: 28px 28px 0 0;
+            padding: 24px 20px 40px;
+            max-height: 85vh;
+            overflow-y: auto;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .modal-adicionais.open .adicionais-sheet { transform: translateY(0); }
+        .adicional-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 12px 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .logo-wrap { display: flex; align-items: center; gap: 12px; }
-        .logo-wrap img {
-            height: 52px;
-            width: 52px;
-            border-radius: 50%;
-            object-fit: contain;
-            background: #fff;
-            padding: 3px;
-            border: 2px solid var(--red);
-        }
-        .logo-text {
-            font-family: var(--font-h);
-            font-weight: 900;
-            font-size: 1.1rem;
-            letter-spacing: .08em;
-            color: #fff;
-            text-transform: uppercase;
-            line-height: 1.2;
-        }
-        .logo-text span { color: var(--red); }
-
-        nav.desktop { display: none; }
-        @media(min-width:768px){ nav.desktop { display: flex; align-items: center; gap: 6px; } }
-        nav.desktop a {
-            color: #ccc;
-            text-decoration: none;
-            font-family: var(--font-h);
-            font-weight: 600;
-            font-size: .95rem;
-            letter-spacing: .05em;
-            padding: 8px 14px;
-            border-radius: 8px;
-            transition: color .2s, background .2s;
-            text-transform: uppercase;
-        }
-        nav.desktop a:hover { color: #fff; background: rgba(230,0,0,.15); }
-        nav.desktop .nav-cta {
-            background: var(--red);
-            color: #fff !important;
-            padding: 9px 20px;
-            border-radius: 8px;
-            margin-left: 8px;
-        }
-        nav.desktop .nav-cta:hover { background: var(--red-d) !important; }
-
-        .hamburger {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 5px;
-            width: 40px;
-            height: 40px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 6px;
-        }
-        @media(min-width:768px){ .hamburger { display: none; } }
-        .hamburger span {
-            display: block;
-            height: 2px;
-            background: #fff;
-            border-radius: 2px;
-            transition: transform .3s, opacity .3s;
-        }
-        .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-        .hamburger.open span:nth-child(2) { opacity: 0; }
-        .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
-
-        #mobile-menu {
-            display: none;
-            flex-direction: column;
-            background: var(--dark2);
-            border-top: 1px solid #2a2a2a;
-            padding-bottom: 12px;
-        }
-        #mobile-menu.open { display: flex; }
-        #mobile-menu a {
-            color: #ddd;
-            text-decoration: none;
-            font-family: var(--font-h);
-            font-weight: 700;
-            font-size: 1.15rem;
-            letter-spacing: .06em;
-            text-transform: uppercase;
-            padding: 14px 24px;
-            border-bottom: 1px solid #222;
-            transition: background .2s, color .2s;
-        }
-        #mobile-menu a:hover { background: rgba(230,0,0,.1); color: var(--red); }
-        #mobile-menu a:last-child { border-bottom: none; }
-
-        /* ── HERO ── */
-        #inicio {
-            position: relative;
-            background: var(--dark);
-            color: #fff;
-            padding: clamp(60px, 10vw, 120px) 0;
-            overflow: hidden;
-        }
-        .hero-bg {
-            position: absolute; inset: 0;
-            background:
-                radial-gradient(ellipse 70% 80% at 80% 50%, rgba(230,0,0,.12) 0%, transparent 70%),
-                radial-gradient(ellipse 50% 60% at 10% 80%, rgba(180,0,0,.08) 0%, transparent 60%);
-            pointer-events: none;
-        }
-        .hero-grid {
-            position: absolute; inset: 0;
-            background-image:
-                linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
-            background-size: 60px 60px;
-            pointer-events: none;
-        }
-        .hero-content {
-            position: relative;
-            z-index: 2;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-        }
-        @media(min-width:900px){ .hero-content { max-width: 680px; } }
-
-        .hero-title {
-            font-family: var(--font-h);
-            font-weight: 900;
-            font-size: clamp(2.6rem, 8vw, 5.2rem);
-            line-height: 1;
-            letter-spacing: -.02em;
-            text-transform: uppercase;
-            margin-bottom: 20px;
-        }
-        .hero-title em {
-            font-style: normal;
-            color: var(--red);
-            display: block;
-        }
-        .hero-sub {
-            font-size: clamp(.95rem, 2vw, 1.15rem);
-            color: #aaa;
-            max-width: 520px;
-            line-height: 1.7;
-            margin-bottom: 36px;
-        }
-        .hero-btns {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 14px;
-        }
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            font-family: var(--font-h);
-            font-weight: 700;
-            font-size: 1rem;
-            letter-spacing: .06em;
-            text-transform: uppercase;
-            text-decoration: none;
-            padding: 14px 28px;
-            border-radius: var(--radius);
-            transition: transform .2s, box-shadow .2s, background .2s;
-            white-space: nowrap;
-        }
-        .btn:hover { transform: translateY(-2px); }
-        .btn-primary {
-            background: var(--red);
-            color: #fff;
-            box-shadow: 0 4px 24px rgba(230,0,0,.35);
-        }
-        .btn-primary:hover { background: var(--red-d); box-shadow: 0 6px 32px rgba(230,0,0,.5); }
-        .btn-outline {
-            background: transparent;
-            color: #fff;
-            border: 2px solid rgba(255,255,255,.2);
-        }
-        .btn-outline:hover { border-color: var(--red); color: var(--red); }
-
-        /* Hero stats */
-        .hero-stats {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 32px;
-            margin-top: 48px;
-            padding-top: 32px;
-            border-top: 1px solid rgba(255,255,255,.1);
-        }
-        .stat-item { display: flex; flex-direction: column; }
-        .stat-num {
-            font-family: var(--font-h);
-            font-weight: 900;
-            font-size: 2rem;
-            color: #fff;
-            line-height: 1;
-        }
-        .stat-num span { color: var(--red); }
-        .stat-label { font-size: .8rem; color: var(--gray); text-transform: uppercase; letter-spacing: .1em; margin-top: 4px; }
-
-        /* ── TRUST BAR ── */
-        .trust-bar {
-            background: var(--dark2);
-            border-bottom: 1px solid #222;
             padding: 14px 0;
-            overflow: hidden;
+            border-bottom: 1px solid #f0f0f0;
         }
-        .trust-inner {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 8px 32px;
-        }
-        .trust-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #888;
-            font-size: .85rem;
-            font-family: var(--font-h);
-            font-weight: 600;
-            letter-spacing: .06em;
-            text-transform: uppercase;
-            white-space: nowrap;
-        }
-        .trust-item i { color: var(--red); font-size: 1.1rem; }
-        .trust-divider { color: #333; }
-        @media(max-width:600px){ .trust-divider { display: none; } }
-
-        /* ── SERVIÇOS ── */
-        #servicos {
-            padding: clamp(60px, 8vw, 100px) 0;
-            background: #fff;
-        }
-        .services-header { margin-bottom: 56px; }
-        .services-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 24px;
-        }
-        @media(min-width:640px){ .services-grid { grid-template-columns: 1fr 1fr; } }
-        @media(min-width:1024px){ .services-grid { grid-template-columns: 1fr 1fr 1fr; } }
-
-        .service-card {
-            position: relative;
-            background: #fafafa;
-            border: 1px solid #e8e8e8;
-            border-radius: 16px;
-            padding: 36px 32px;
-            transition: transform .25s, box-shadow .25s, border-color .25s;
-            overflow: hidden;
-        }
-        .service-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 3px;
-            background: var(--red);
-            transform: scaleX(0);
-            transform-origin: left;
-            transition: transform .3s;
-        }
-        .service-card:hover { transform: translateY(-6px); box-shadow: 0 20px 60px rgba(0,0,0,.1); border-color: transparent; }
-        .service-card:hover::before { transform: scaleX(1); }
-
-        .service-icon {
-            width: 60px; height: 60px;
-            background: rgba(230,0,0,.08);
-            border-radius: 14px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.8rem;
-            color: var(--red);
-            margin-bottom: 20px;
-            transition: background .25s;
-        }
-        .service-card:hover .service-icon { background: var(--red); color: #fff; }
-        .service-card h3 {
-            font-family: var(--font-h);
-            font-weight: 800;
-            font-size: 1.3rem;
-            margin-bottom: 10px;
-            letter-spacing: .02em;
-        }
-        .service-card p { color: #555; line-height: 1.65; font-size: .95rem; }
-
-        .service-tag {
-            display: inline-block;
-            margin-top: 18px;
-            font-family: var(--font-h);
-            font-weight: 700;
-            font-size: .72rem;
-            letter-spacing: .1em;
-            text-transform: uppercase;
-            color: var(--red);
-            background: rgba(230,0,0,.08);
-            padding: 4px 10px;
-            border-radius: 4px;
-        }
-
-        /* ── GALERIA ── */
-        #galeria {
-            padding: clamp(60px, 8vw, 100px) 0;
-            background: var(--dark);
-            color: #fff;
-        }
-        #galeria .section-title { color: #fff; }
-        #galeria .section-sub { color: #777; }
-        .gallery-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 16px;
-            margin-top: 48px;
-        }
-        @media(min-width:640px){ .gallery-grid { grid-template-columns: 1fr 1fr; } }
-        @media(min-width:1024px){ .gallery-grid { grid-template-columns: 1fr 1fr 1fr; } }
-
-        .gallery-item {
-            position: relative;
-            border-radius: 14px;
-            overflow: hidden;
-            aspect-ratio: 4/3;
-            background: var(--dark2);
-            border: 1px solid #2a2a2a;
-            cursor: pointer;
-        }
-        .gallery-item img {
-            width: 100%; height: 100%;
-            object-fit: cover;
-            transition: transform .4s;
-            display: block;
-        }
-        .gallery-item:hover img { transform: scale(1.06); }
-        .gallery-overlay {
-            position: absolute; inset: 0;
-            background: linear-gradient(to top, rgba(0,0,0,.8) 0%, rgba(0,0,0,.1) 60%, transparent 100%);
-            opacity: 0;
-            transition: opacity .3s;
-            display: flex; align-items: flex-end;
-            padding: 20px;
-        }
-        .gallery-item:hover .gallery-overlay { opacity: 1; }
-        .gallery-overlay p {
-            font-family: var(--font-h);
-            font-weight: 700;
-            font-size: 1.1rem;
-            letter-spacing: .04em;
-            color: #fff;
-        }
-        .gallery-badge {
-            position: absolute; top: 14px; left: 14px;
-            background: var(--red);
-            color: #fff;
-            font-family: var(--font-h);
-            font-weight: 700;
-            font-size: .7rem;
-            letter-spacing: .1em;
-            text-transform: uppercase;
-            padding: 4px 10px;
-            border-radius: 4px;
-        }
-
-        /* ── SOBRE ── */
-        #sobre {
-            padding: clamp(60px, 8vw, 100px) 0;
-            background: var(--light);
-        }
-        .sobre-inner {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 48px;
-            align-items: center;
-        }
-        @media(min-width:900px){ .sobre-inner { grid-template-columns: 1fr 1fr; } }
-
-        .sobre-visual {
-            position: relative;
-            border-radius: 20px;
-            overflow: hidden;
-        }
-        .sobre-visual img {
-            width: 100%; display: block;
-            aspect-ratio: 4/3;
-            object-fit: cover;
-        }
-        .sobre-badge {
-            position: absolute;
-            bottom: 24px; left: 24px;
-            background: var(--red);
-            color: #fff;
-            padding: 14px 20px;
-            border-radius: 12px;
-            font-family: var(--font-h);
-            font-weight: 800;
-            font-size: 1.1rem;
-            box-shadow: 0 8px 24px rgba(230,0,0,.4);
-        }
-        .sobre-badge span { display: block; font-size: .75rem; font-weight: 600; opacity: .85; letter-spacing: .05em; }
-
-        .sobre-text h2 { margin-bottom: 20px; }
-        .sobre-text p { color: #555; line-height: 1.75; margin-bottom: 16px; font-size: 1rem; }
-
-        .check-list { list-style: none; margin-top: 28px; display: flex; flex-direction: column; gap: 14px; }
-        .check-list li {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            font-size: .97rem;
-            color: #333;
-            font-weight: 500;
-        }
-        .check-list li i {
-            color: var(--red);
-            font-size: 1.3rem;
-            flex-shrink: 0;
-            margin-top: 1px;
-        }
-
-        /* ── CONTATO ── */
-        #contato {
-            padding: clamp(60px, 8vw, 100px) 0;
-            background: var(--dark2);
-            color: #fff;
-        }
-        .contato-header { text-align: center; margin-bottom: 56px; }
-        .contato-header .section-title { color: #fff; }
-        .contato-header .section-sub { color: #666; margin: 12px auto 0; }
-
-        .contato-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 32px;
-        }
-        @media(min-width:900px){ .contato-grid { grid-template-columns: 1fr 1fr; gap: 48px; } }
-
-        .contact-info { display: flex; flex-direction: column; gap: 20px; }
-        .contact-card {
-            background: rgba(255,255,255,.04);
-            border: 1px solid rgba(255,255,255,.08);
-            border-left: 3px solid var(--red);
-            border-radius: var(--radius);
-            padding: 22px 24px;
-            display: flex;
-            align-items: flex-start;
-            gap: 16px;
-            transition: background .2s;
-        }
-        .contact-card:hover { background: rgba(255,255,255,.07); }
-        .contact-card i { font-size: 1.6rem; color: var(--red); flex-shrink: 0; margin-top: 2px; }
-        .contact-card h4 {
-            font-family: var(--font-h);
-            font-weight: 700;
-            font-size: 1rem;
-            letter-spacing: .05em;
-            text-transform: uppercase;
-            margin-bottom: 4px;
-        }
-        .contact-card p { color: #777; font-size: .9rem; line-height: 1.6; }
-        .contact-card a { color: var(--red); text-decoration: none; font-weight: 600; font-size: .85rem; display: inline-block; margin-top: 6px; }
-        .contact-card a:hover { text-decoration: underline; }
-
-        /* Formulário */
-        .contact-form {
-            background: #fff;
-            color: #222;
-            border-radius: 16px;
-            padding: clamp(28px, 5vw, 40px);
-        }
-        .contact-form h3 {
-            font-family: var(--font-h);
-            font-weight: 900;
-            font-size: 1.6rem;
-            letter-spacing: .02em;
-            margin-bottom: 24px;
-            color: var(--dark);
-        }
-        .form-group { margin-bottom: 18px; }
-        .form-group label {
-            display: block;
-            font-weight: 600;
-            font-size: .85rem;
-            color: #444;
-            margin-bottom: 6px;
-            letter-spacing: .03em;
-        }
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            border: 1.5px solid #e0e0e0;
+        .qty-btn {
+            width: 36px;
+            height: 36px;
             border-radius: 10px;
-            padding: 12px 16px;
-            font-family: var(--font-b);
-            font-size: .95rem;
-            color: #222;
-            background: #fafafa;
-            transition: border-color .2s, box-shadow .2s;
-            outline: none;
-            appearance: none;
-        }
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            border-color: var(--red);
-            box-shadow: 0 0 0 3px rgba(230,0,0,.1);
-            background: #fff;
-        }
-        .form-group textarea { resize: vertical; min-height: 110px; }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-        @media(max-width:500px){ .form-row { grid-template-columns: 1fr; } }
-
-        .btn-submit {
-            width: 100%;
-            background: var(--dark);
-            color: #fff;
             border: none;
+            font-size: 1.1rem;
+            font-weight: 900;
             cursor: pointer;
-            font-size: 1rem;
-            justify-content: center;
-        }
-        .btn-submit:hover { background: var(--red); }
-
-        /* ── FOOTER ── */
-        footer {
-            background: var(--dark);
-            color: #555;
-            padding: 32px 0;
-            border-top: 1px solid #1e1e1e;
-        }
-        .footer-inner {
             display: flex;
-            flex-direction: column;
             align-items: center;
-            gap: 20px;
-            text-align: center;
+            justify-content: center;
+            transition: all 0.15s;
         }
-        @media(min-width:768px){
-            .footer-inner { flex-direction: row; justify-content: space-between; text-align: left; }
-        }
-        .footer-brand { display: flex; align-items: center; gap: 10px; }
-        .footer-brand img {
-            height: 36px; width: 36px;
-            border-radius: 50%;
-            object-fit: contain;
-            background: #fff;
-            padding: 2px;
-            border: 2px solid var(--red);
-        }
-        .footer-brand span {
-            font-family: var(--font-h);
-            font-weight: 800;
-            font-size: .95rem;
-            letter-spacing: .08em;
-            color: #fff;
-            text-transform: uppercase;
-        }
-        .footer-copy { font-size: .82rem; }
-        .footer-social { display: flex; gap: 16px; }
-        .footer-social a {
-            color: #555;
-            font-size: 1.4rem;
-            transition: color .2s;
-        }
-        .footer-social a:hover { color: var(--red); }
+        .qty-minus { background: #f5f5f5; color: #555; }
+        .qty-minus:hover { background: #e0e0e0; }
+        .qty-plus { background: var(--vermelho); color: white; }
+        .qty-plus:hover { background: var(--vermelho-escuro); }
 
-        /* ── WHATSAPP FLOAT ── */
-        .wa-float {
+        /* CARRINHO MODAL */
+        .cart-modal {
             position: fixed;
-            bottom: 24px; right: 24px;
-            z-index: 200;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 2000;
+            display: flex;
+            align-items: flex-end;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .cart-modal.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .cart-sheet {
+            background: white;
+            width: 100%;
+            border-radius: 28px 28px 0 0;
+            padding: 24px 20px 40px;
+            max-height: 85vh;
+            overflow-y: auto;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .cart-modal.open .cart-sheet { transform: translateY(0); }
+
+        /* PONTOS */
+        .pontos-badge {
+            background: linear-gradient(135deg, var(--amarelo), #FF6F00);
+            border-radius: 16px;
+            padding: 12px 20px;
             display: flex;
             align-items: center;
             gap: 10px;
-            background: #25D366;
-            color: #fff;
-            text-decoration: none;
-            padding: 14px 20px 14px 16px;
-            border-radius: 50px;
-            font-family: var(--font-h);
-            font-weight: 700;
-            font-size: .95rem;
-            letter-spacing: .05em;
-            box-shadow: 0 6px 24px rgba(37,211,102,.35);
-            transition: transform .2s, box-shadow .2s;
+            box-shadow: 0 4px 16px rgba(255,214,0,0.4);
         }
-        .wa-float:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 10px 32px rgba(37,211,102,.5); }
-        .wa-float i { font-size: 1.6rem; }
-        .wa-float .wa-label { display: none; }
-        @media(min-width:640px){ .wa-float .wa-label { display: inline; } }
 
-        /* ── SCROLL REVEAL ── */
-        .reveal { opacity: 0; transform: translateY(28px); transition: opacity .55s ease, transform .55s ease; }
-        .reveal.visible { opacity: 1; transform: none; }
-        .reveal-delay-1 { transition-delay: .1s; }
-        .reveal-delay-2 { transition-delay: .2s; }
-        .reveal-delay-3 { transition-delay: .3s; }
-        .reveal-delay-4 { transition-delay: .4s; }
+        /* STATUS DO PEDIDO */
+        .status-bar {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            border: 3px solid var(--amarelo);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        .status-step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+        }
+        .status-dot {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+            transition: all 0.5s;
+        }
+        .status-dot.done { background: #4CAF50; color: white; }
+        .status-dot.active { background: var(--amarelo); color: var(--preto); animation: pulse-dot 1s infinite; }
+        .status-dot.pending { background: #eee; color: #999; }
+        @keyframes pulse-dot {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,214,0,0.6); }
+            50% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(255,214,0,0); }
+        }
+        .status-line {
+            width: 2px;
+            height: 24px;
+            margin-left: 15px;
+            background: #eee;
+        }
+        .status-line.done { background: #4CAF50; }
 
-        /* ── LIGHTBOX ── */
-        #lightbox {
-            display: none;
-            position: fixed; inset: 0;
-            z-index: 300;
-            background: rgba(0,0,0,.92);
+        /* TABS */
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: #999;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            color: var(--vermelho);
+            border-bottom-color: var(--vermelho);
+        }
+
+        /* MODAL PONTOS */
+        .pontos-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 3000;
+            display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
         }
-        #lightbox.open { display: flex; }
-        #lightbox img { max-width: 100%; max-height: 88vh; border-radius: 10px; object-fit: contain; }
-        #lightbox-close {
-            position: absolute; top: 20px; right: 24px;
-            color: #fff; font-size: 2rem; cursor: pointer;
-            background: none; border: none; line-height: 1;
+        .pontos-modal.open { opacity: 1; pointer-events: all; }
+        .pontos-box {
+            background: white;
+            border-radius: 24px;
+            padding: 32px 24px;
+            width: 100%;
+            max-width: 380px;
+            transform: scale(0.8);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .pontos-modal.open .pontos-box { transform: scale(1); }
+
+        /* RECOMPENSAS */
+        .recompensa-card {
+            border: 2px solid #eee;
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .recompensa-card:hover { border-color: var(--amarelo); background: #FFF8E1; }
+        .recompensa-card.desbloqueado { border-color: #4CAF50; }
+
+        /* NOTIFICAÇÃO TOAST */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-80px);
+            background: var(--preto);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 100px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            z-index: 9999;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            white-space: nowrap;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
+        /* CATEGORIA PILLS */
+        .cat-pill {
+            padding: 8px 18px;
+            border-radius: 100px;
+            border: 2px solid #eee;
+            background: white;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .cat-pill.active {
+            background: var(--vermelho);
+            color: white;
+            border-color: var(--vermelho);
         }
 
-        /* ── TOAST ── */
-        #toast {
-            position: fixed; bottom: 88px; right: 24px;
-            background: var(--dark2);
-            color: #fff;
-            border-left: 4px solid var(--red);
-            padding: 14px 20px;
-            border-radius: 10px;
-            font-size: .9rem;
-            font-weight: 600;
-            box-shadow: var(--shadow);
-            transform: translateX(120%);
-            transition: transform .35s;
-            z-index: 300;
-            max-width: 300px;
+        /* MAPA */
+        #mapa-section { background: white; border-radius: 20px; overflow: hidden; border: 3px solid #eee; }
+
+        /* SCROLL SUAVE */
+        html { scroll-behavior: smooth; }
+
+        /* ANIMAÇÃO DE ENTRADA */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        #toast.show { transform: translateX(0); }
+        .item-card { animation: fadeUp 0.4s ease both; }
+
+        /* BADGE CONTADOR */
+        .cart-count {
+            background: var(--amarelo);
+            color: var(--preto);
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 0.75rem;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .section-title {
+            font-family: 'Bangers', cursive;
+            font-size: 1.8rem;
+            color: var(--vermelho);
+            letter-spacing: 2px;
+        }
+        .tag-categoria {
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: #FFF3E0;
+            color: #E65100;
+        }
     </style>
 </head>
 <body>
 
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- AVISO LOJA FECHADA -->
+<div id="aviso-fechada">
+    🔴 LOJA FECHADA NO MOMENTO — Em breve voltamos!
+</div>
+
 <!-- HEADER -->
-<header>
-    <div class="header-inner">
-        <div class="logo-wrap">
-            <!-- Link corrigido para a pasta assets -->
-            <img src="assets/logo.jpg" 
-                 alt="Logo Embaixador Auto Elétrica"
-                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-            <!-- Fallback se a imagem não carregar -->
-            <div style="display:none; width:52px; height:52px; background:var(--red); border-radius:50%; align-items:center; justify-content:center; font-size:1.4rem; color:#fff; font-family:var(--font-h); font-weight:900; border:2px solid var(--red);">E</div>
-            <div class="logo-text">EMBAIXADOR<br><span>AUTO ELÉTRICA</span></div>
-        </div>
-
-        <nav class="desktop">
-            <a href="#inicio">Início</a>
-            <a href="#servicos">Serviços</a>
-            <a href="#galeria">Trabalhos</a>
-            <a href="#sobre">Sobre</a>
-            <a href="#contato">Contato</a>
-            <a href="https://wa.me/5515998524033?text=Olá,%20vim%20pelo%20site%20e%20quero%20um%20orçamento!" target="_blank" class="nav-cta"><i class="ph ph-whatsapp-logo"></i> Orçamento</a>
-        </nav>
-
-        <button class="hamburger" id="hamburger" aria-label="Menu" onclick="toggleMenu()">
-            <span></span><span></span><span></span>
-        </button>
+<div class="zigzag-top"></div>
+<header class="hero-header text-center px-4 pt-6">
+    <div class="flex justify-center mb-2">
+        <img src="https://i.imgur.com/placeholder.png" onerror="this.style.display='none'" alt="" style="height:80px">
     </div>
+    <div class="logo-title">JP DOG'S</div>
+    <div class="logo-sub mb-1">🌭 Disk Entrega</div>
+    <p class="text-sm font-bold text-gray-700 mb-4">Rechã · Itapetininga</p>
 
-    <nav id="mobile-menu" aria-label="Menu mobile">
-        <a href="#inicio" onclick="closeMenu()">Início</a>
-        <a href="#servicos" onclick="closeMenu()">Serviços</a>
-        <a href="#galeria" onclick="closeMenu()">Trabalhos Realizados</a>
-        <a href="#sobre" onclick="closeMenu()">Sobre Nós</a>
-        <a href="#contato" onclick="closeMenu()">Contato</a>
-        <a href="https://wa.me/5515998524033?text=Olá,%20vim%20pelo%20site!" target="_blank" onclick="closeMenu()" style="color:var(--red);">
-            <i class="ph ph-whatsapp-logo"></i> Falar no WhatsApp
+    <!-- Info rápida -->
+    <div class="flex justify-center gap-3 flex-wrap mb-4">
+        <a href="tel:15996044324" class="bg-white rounded-full px-4 py-2 text-sm font-bold text-red-700 shadow flex items-center gap-2">
+            <i class="fas fa-phone"></i> (15) 99604-4324
         </a>
-    </nav>
+        <a href="https://wa.me/5515996044324" target="_blank" class="bg-white rounded-full px-4 py-2 text-sm font-bold text-green-700 shadow flex items-center gap-2">
+            <i class="fab fa-whatsapp"></i> WhatsApp
+        </a>
+        <a href="https://instagram.com/jp_dogs_oficial" target="_blank" class="bg-white rounded-full px-4 py-2 text-sm font-bold text-purple-700 shadow flex items-center gap-2">
+            <i class="fab fa-instagram"></i> Instagram
+        </a>
+    </div>
 </header>
 
-<!-- HERO -->
-<section id="inicio">
-    <div class="hero-bg"></div>
-    <div class="hero-grid"></div>
-    <div class="container">
-        <div class="hero-content">
-            <span class="section-label">Especialistas em Manutenção B2B</span>
-            <h1 class="hero-title">
-                Sua Frota<br>
-                <em>Sempre em<br>Operação</em>
-            </h1>
-            <p class="hero-sub">
-                Liderados pelo Bruno, entregamos manutenção elétrica especializada para tratores, caminhões e frotas corporativas. Menos tempo parado, mais produtividade.
-            </p>
-            <div class="hero-btns">
-                <a href="https://wa.me/5515998524033?text=Preciso%20de%20suporte%20técnico%20urgente!" target="_blank" class="btn btn-primary">
-                    <i class="ph ph-wrench"></i> Acionar Suporte
-                </a>
-                <a href="#servicos" class="btn btn-outline">
-                    Ver Soluções <i class="ph ph-arrow-down"></i>
-                </a>
-            </div>
-            <div class="hero-stats">
-                <div class="stat-item">
-                    <div class="stat-num">10<span>+</span></div>
-                    <div class="stat-label">Anos de experiência</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-num">200<span>+</span></div>
-                    <div class="stat-label">Clientes atendidos</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-num">24<span>h</span></div>
-                    <div class="stat-label">Suporte rápido</div>
-                </div>
-            </div>
+<!-- NAVEGAÇÃO POR ABAS -->
+<div class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+    <div class="flex">
+        <button class="tab-btn active" onclick="showTab('cardapio', this)">🍔 Cardápio</button>
+        <button class="tab-btn" onclick="showTab('pedidos', this)">📦 Meu Pedido</button>
+        <button class="tab-btn" onclick="showTab('pontos', this)">⭐ Pontos</button>
+        <button class="tab-btn" onclick="showTab('local', this)">📍 Localização</button>
+    </div>
+</div>
+
+<!-- SEÇÃO CARDÁPIO -->
+<section id="tab-cardapio" class="px-4 py-5 pb-32">
+    <!-- IDENTIFICAÇÃO DO CLIENTE -->
+    <div id="cliente-form" class="bg-white rounded-2xl p-4 mb-4 border-2 border-yellow-300 shadow-sm">
+        <p class="font-bold text-gray-700 mb-3">👤 Qual é o seu nome?</p>
+        <div class="flex gap-2">
+            <input type="text" id="cliente-nome" placeholder="Seu nome ou apelido..."
+                class="flex-1 border-2 border-gray-200 rounded-xl px-4 py-2 font-bold focus:outline-none focus:border-yellow-400">
+            <button onclick="salvarCliente()" class="bg-yellow-400 text-black font-black px-4 rounded-xl">OK</button>
+        </div>
+    </div>
+
+    <!-- PONTOS DO CLIENTE -->
+    <div id="pontos-banner" class="pontos-badge mb-4 hidden" onclick="abrirPontos()">
+        <span class="text-2xl">⭐</span>
+        <div>
+            <p class="font-black text-sm text-gray-900">Seus Pontos</p>
+            <p class="font-bold text-xs text-gray-700">Acumule e troque por prêmios!</p>
+        </div>
+        <span class="bangers text-3xl ml-auto" id="pontos-display">0 pts</span>
+    </div>
+
+    <!-- CATEGORIAS -->
+    <div class="flex gap-2 overflow-x-auto pb-2 mb-4" style="scrollbar-width:none">
+        <button class="cat-pill active" onclick="filtrarCategoria('todos', this)">🌭 Todos</button>
+        <button class="cat-pill" onclick="filtrarCategoria('hot-dog', this)">🌭 Hot Dogs</button>
+        <button class="cat-pill" onclick="filtrarCategoria('lanche', this)">🍔 Lanches</button>
+        <button class="cat-pill" onclick="filtrarCategoria('bebida', this)">🥤 Bebidas</button>
+        <button class="cat-pill" onclick="filtrarCategoria('combo', this)">🎯 Combos</button>
+    </div>
+
+    <!-- BUSCA -->
+    <div class="relative mb-4">
+        <input type="text" id="busca-lanche" placeholder="Buscar no cardápio..."
+            oninput="filtrarBusca()"
+            class="w-full border-2 border-gray-200 rounded-2xl px-5 py-3 font-bold pr-12 focus:outline-none focus:border-red-400 bg-white">
+        <i class="fas fa-search absolute right-4 top-3.5 text-gray-400"></i>
+    </div>
+
+    <div id="container-lanches" class="grid grid-cols-1 gap-3"></div>
+    <div id="empty-state" class="hidden text-center py-16">
+        <div class="text-6xl mb-4">🌭</div>
+        <p class="font-bold text-gray-400">Nenhum item encontrado</p>
+    </div>
+</section>
+
+<!-- SEÇÃO MEU PEDIDO / STATUS -->
+<section id="tab-pedidos" class="px-4 py-5 hidden">
+    <div id="sem-pedido" class="text-center py-16">
+        <div class="text-6xl mb-4">📭</div>
+        <p class="font-bold text-gray-500 text-lg">Você ainda não fez um pedido</p>
+        <p class="text-gray-400 text-sm mt-1">Vá ao cardápio e faça seu pedido!</p>
+        <button onclick="showTab('cardapio', null)" class="mt-4 bg-red-600 text-white px-8 py-3 rounded-2xl font-black">
+            Ver Cardápio
+        </button>
+    </div>
+    <div id="status-pedido" class="hidden">
+        <h2 class="section-title mb-4">Seu Pedido</h2>
+        <div class="status-bar mb-4">
+            <p class="font-black text-gray-700 mb-4">📡 Status em tempo real</p>
+            <div id="status-timeline"></div>
+        </div>
+        <div id="resumo-pedido" class="bg-white rounded-2xl p-4 border-2 border-gray-100"></div>
+    </div>
+</section>
+
+<!-- SEÇÃO PONTOS -->
+<section id="tab-pontos" class="px-4 py-5 hidden">
+    <h2 class="section-title mb-1">⭐ JP Fidelidade</h2>
+    <p class="text-sm text-gray-500 font-semibold mb-4">Acumule pontos e troque por prêmios!</p>
+
+    <div class="pontos-badge mb-6">
+        <span class="text-3xl">⭐</span>
+        <div>
+            <p class="font-black text-gray-900">Seus Pontos</p>
+            <p class="text-xs text-gray-700">Válidos por 60 dias após cada compra</p>
+        </div>
+        <span class="bangers text-4xl ml-auto" id="pontos-display2">0</span>
+    </div>
+
+    <h3 class="font-black text-gray-700 mb-3">🎁 Recompensas</h3>
+    <div class="space-y-3" id="lista-recompensas"></div>
+
+    <div class="mt-6 bg-yellow-50 border-2 border-yellow-200 rounded-2xl p-4">
+        <p class="font-black text-yellow-800 mb-2">📋 Como funciona?</p>
+        <ul class="text-sm text-yellow-700 space-y-1 font-semibold">
+            <li>• A cada R$ 1,00 gasto = 1 ponto</li>
+            <li>• Pontos acumulam a cada pedido</li>
+            <li>• Troque por bebidas, lanches e mais!</li>
+        </ul>
+    </div>
+
+    <div class="mt-4 bg-white border-2 border-gray-100 rounded-2xl p-4">
+        <p class="font-black text-gray-700 mb-2">📜 Histórico</p>
+        <div id="historico-pontos" class="text-sm text-gray-500 space-y-2">
+            <p>Nenhum pedido ainda...</p>
         </div>
     </div>
 </section>
 
-<!-- TRUST BAR -->
-<div class="trust-bar">
-    <div class="container">
-        <div class="trust-inner">
-            <div class="trust-item"><i class="ph-fill ph-check-circle"></i> Atendimento B2B</div>
-            <div class="trust-divider">|</div>
-            <div class="trust-item"><i class="ph-fill ph-check-circle"></i> Linha Agrícola &amp; Pesada</div>
-            <div class="trust-divider">|</div>
-            <div class="trust-item"><i class="ph-fill ph-check-circle"></i> Diagnóstico Computadorizado</div>
-            <div class="trust-divider">|</div>
-            <div class="trust-item"><i class="ph-fill ph-check-circle"></i> Peças com Garantia</div>
-            <div class="trust-divider">|</div>
-            <div class="trust-item"><i class="ph-fill ph-check-circle"></i> Emissão de Nota Fiscal</div>
+<!-- SEÇÃO LOCALIZAÇÃO -->
+<section id="tab-local" class="px-4 py-5 hidden">
+    <h2 class="section-title mb-1">📍 Onde Estamos</h2>
+    <p class="text-sm text-gray-500 font-semibold mb-4">Rechã · Itapetininga, SP</p>
+
+    <div id="mapa-section" class="mb-4" style="height: 280px;">
+        <iframe
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3664.0!2d-48.0530!3d-23.5910!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2sRua+Joaquim+Felicio+de+Oliveira+252!5e0!3m2!1spt-BR!2sbr!4v1234567890"
+            width="100%" height="100%" style="border:0;" allowfullscreen loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade">
+        </iframe>
+    </div>
+
+    <div class="space-y-3">
+        <div class="bg-white rounded-2xl p-4 border-2 border-gray-100 flex items-start gap-3">
+            <div class="bg-red-100 rounded-xl p-3 text-red-600 text-xl">📍</div>
+            <div>
+                <p class="font-black text-gray-800">Endereço</p>
+                <p class="text-gray-600 text-sm">Rua Joaquim Felicio de Oliveira, 252</p>
+                <p class="text-gray-500 text-sm">Rechã · Itapetininga, SP</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl p-4 border-2 border-gray-100 flex items-start gap-3">
+            <div class="bg-green-100 rounded-xl p-3 text-green-600 text-xl">📞</div>
+            <div>
+                <p class="font-black text-gray-800">Contatos</p>
+                <a href="tel:15996044324" class="text-green-600 font-bold text-sm block">(15) 99604-4324</a>
+                <a href="tel:15998082604" class="text-green-600 font-bold text-sm block">(15) 99808-2604</a>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl p-4 border-2 border-gray-100 flex items-start gap-3">
+            <div class="bg-purple-100 rounded-xl p-3 text-purple-600 text-xl">📱</div>
+            <div>
+                <p class="font-black text-gray-800">Redes Sociais</p>
+                <a href="https://instagram.com/jp_dogs_oficial" target="_blank" class="text-purple-600 font-bold text-sm block">@jp_dogs_oficial</a>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl p-4 border-2 border-gray-100 flex items-start gap-3">
+            <div class="bg-yellow-100 rounded-xl p-3 text-yellow-600 text-xl">🕐</div>
+            <div>
+                <p class="font-black text-gray-800">Horário</p>
+                <p class="text-gray-600 text-sm">Segunda a Sexta: 18h - 23h</p>
+                <p class="text-gray-600 text-sm">Sábados e Domingos: 17h - 23h</p>
+            </div>
+        </div>
+    </div>
+
+    <a href="https://wa.me/5515996044324" target="_blank"
+        class="mt-4 block bg-green-500 text-white text-center font-black py-4 rounded-2xl text-lg shadow-lg">
+        <i class="fab fa-whatsapp mr-2"></i> Chamar no WhatsApp
+    </a>
+</section>
+
+<!-- BARRA DE CARRINHO FLUTUANTE -->
+<div id="checkout-bar">
+    <div class="flex items-center gap-3 cursor-pointer" onclick="abrirCarrinho()">
+        <div class="bg-white/20 rounded-xl p-2">🛒</div>
+        <div>
+            <p class="text-white/80 text-xs font-bold uppercase">Ver carrinho</p>
+            <p class="text-white font-black text-lg" id="total-bar">R$ 0,00</p>
+        </div>
+        <div class="cart-count" id="cart-count-badge">0</div>
+    </div>
+    <button onclick="abrirCarrinho()" class="whats-btn">
+        Ver Pedido <i class="fas fa-arrow-right"></i>
+    </button>
+</div>
+
+<!-- MODAL ACRÉSCIMOS -->
+<div class="modal-adicionais" id="modal-adicionais" onclick="fecharAdicionais(event)">
+    <div class="adicionais-sheet">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="section-title">➕ Acréscimos</h2>
+            <button onclick="fecharAdicionaisBtn()" class="text-gray-400 text-xl">✕</button>
+        </div>
+        <p class="text-sm text-gray-500 font-semibold mb-4" id="adicionais-item-nome"></p>
+
+        <div id="lista-adicionais-modal"></div>
+
+        <div class="flex justify-between items-center mt-5 pt-4 border-t-2 border-gray-100">
+            <div>
+                <p class="text-xs text-gray-400 font-bold">Total do item</p>
+                <p class="text-xl font-black text-red-600" id="adicional-total-preview">R$ 0,00</p>
+            </div>
+            <button onclick="confirmarAdicionais()" class="bg-red-600 text-white font-black px-6 py-3 rounded-2xl text-sm shadow-lg flex items-center gap-2">
+                <i class="fas fa-cart-plus"></i> Adicionar ao Carrinho
+            </button>
         </div>
     </div>
 </div>
 
-<!-- SERVIÇOS -->
-<section id="servicos">
-    <div class="container">
-        <div class="services-header reveal">
-            <span class="section-label">O que fazemos</span>
-            <h2 class="section-title">Soluções Elétricas para <span style="color:var(--red)">Empresas</span></h2>
-            <p class="section-sub">Entendemos que tempo parado é prejuízo. Atuamos com agilidade para manter sua operação no ritmo.</p>
+<!-- MODAL CARRINHO -->
+<div class="cart-modal" id="cart-modal" onclick="fecharCarrinho(event)">
+    <div class="cart-sheet">
+        <div class="flex justify-between items-center mb-5">
+            <h2 class="section-title">🛒 Carrinho</h2>
+            <button onclick="fecharCarrinhoBtn()" class="text-gray-400 text-xl">✕</button>
         </div>
+        <div id="lista-carrinho" class="space-y-3 mb-5 max-h-60 overflow-y-auto"></div>
 
-        <div class="services-grid">
-            <div class="service-card reveal reveal-delay-1">
-                <div class="service-icon"><i class="ph ph-tractor"></i></div>
-                <h3>Linha Agrícola &amp; Tratores</h3>
-                <p>Diagnóstico e reparo especializado na complexidade elétrica de tratores e colheitadeiras. Sua lavoura não para.</p>
-                <span class="service-tag">Maquinário Pesado</span>
-            </div>
-            <div class="service-card reveal reveal-delay-2">
-                <div class="service-icon"><i class="ph ph-truck"></i></div>
-                <h3>Frotas de Caminhões</h3>
-                <p>Alternadores, motores de partida, chicotes elétricos e injeção eletrônica. Do utilitário ao caminhão pesado.</p>
-                <span class="service-tag">Transporte</span>
-            </div>
-            <div class="service-card reveal reveal-delay-3">
-                <div class="service-icon"><i class="ph ph-buildings"></i></div>
-                <h3>Contratos B2B</h3>
-                <p>Parcerias de manutenção preventiva e corretiva para empresas. Atendimento prioritário, NF e relatórios de frota.</p>
-                <span class="service-tag">Pessoa Jurídica</span>
-            </div>
-            <div class="service-card reveal reveal-delay-1">
-                <div class="service-icon"><i class="ph ph-car-profile"></i></div>
-                <h3>Veículos Corporativos</h3>
-                <p>Manutenção elétrica completa para a frota leve da sua empresa. Carros, vans e utilitários com qualidade garantida.</p>
-                <span class="service-tag">Frota Leve</span>
-            </div>
-            <div class="service-card reveal reveal-delay-2">
-                <div class="service-icon"><i class="ph ph-cpu"></i></div>
-                <h3>Diagnóstico Eletrônico</h3>
-                <p>Scanner computadorizado para identificar falhas com precisão, reduzindo o tempo de diagnóstico e o custo do reparo.</p>
-                <span class="service-tag">Tecnologia</span>
-            </div>
-            <div class="service-card reveal reveal-delay-3">
-                <div class="service-icon"><i class="ph ph-lightning"></i></div>
-                <h3>Manutenção Preventiva</h3>
-                <p>Cronograma de revisões para evitar panes. Mais vida útil para seus veículos e menos gastos emergenciais.</p>
-                <span class="service-tag">Prevenção</span>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- GALERIA -->
-<section id="galeria">
-    <div class="container">
-        <div class="reveal">
-            <span class="section-label">Nosso Trabalho</span>
-            <h2 class="section-title" style="color:#fff">Trabalhos <span style="color:var(--red)">Realizados</span></h2>
-            <p class="section-sub">Veja um pouco do nosso dia a dia prestando manutenção preventiva e corretiva.</p>
-        </div>
-
-        <div class="gallery-grid">
-            <!-- Foto 1 — Usando a imagem motor.png dos seus assets -->
-            <div class="gallery-item reveal reveal-delay-1" onclick="openLightbox(this)">
-                <img src="assets/motor.png" alt="Manutenção de Motor" loading="lazy">
-                <div class="gallery-overlay"><p>Reparo de Motor</p></div>
-                <span class="gallery-badge">Elétrica</span>
-            </div>
-            <!-- Foto 2 — Usando bruno.jpg.png -->
-            <div class="gallery-item reveal reveal-delay-2" onclick="openLightbox(this)">
-                <img src="assets/bruno.jpg.png" alt="Especialista Bruno" loading="lazy">
-                <div class="gallery-overlay"><p>Bruno em Campo</p></div>
-                <span class="gallery-badge">Equipe</span>
-            </div>
-            <!-- Foto 3 -->
-            <div class="gallery-item reveal reveal-delay-3" onclick="openLightbox(this)">
-                <img src="https://placehold.co/800x600/1a1a1a/e60000?text=Sua+Foto+3" alt="Diagnóstico Computadorizado" loading="lazy">
-                <div class="gallery-overlay"><p>Diagnóstico Computadorizado</p></div>
-                <span class="gallery-badge">Diagnóstico</span>
-            </div>
-            <!-- Foto 4 -->
-            <div class="gallery-item reveal reveal-delay-1" onclick="openLightbox(this)">
-                <img src="https://placehold.co/800x600/1a1a1a/e60000?text=Sua+Foto+4" alt="Frota de Caminhões" loading="lazy">
-                <div class="gallery-overlay"><p>Frota de Caminhões</p></div>
-                <span class="gallery-badge">Frotas</span>
-            </div>
-            <!-- Foto 5 -->
-            <div class="gallery-item reveal reveal-delay-2" onclick="openLightbox(this)">
-                <img src="https://placehold.co/800x600/1a1a1a/e60000?text=Sua+Foto+5" alt="Manutenção Preventiva" loading="lazy">
-                <div class="gallery-overlay"><p>Manutenção Preventiva</p></div>
-                <span class="gallery-badge">Preventiva</span>
-            </div>
-            <!-- Foto 6 -->
-            <div class="gallery-item reveal reveal-delay-3" onclick="openLightbox(this)">
-                <img src="https://placehold.co/800x600/1a1a1a/e60000?text=Sua+Foto+6" alt="Reparo Elétrico" loading="lazy">
-                <div class="gallery-overlay"><p>Serviço de Qualidade</p></div>
-                <span class="gallery-badge">Elétrica</span>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- LIGHTBOX -->
-<div id="lightbox" onclick="closeLightbox()">
-    <button id="lightbox-close" onclick="closeLightbox()" aria-label="Fechar">&times;</button>
-    <img id="lightbox-img" src="" alt="">
-</div>
-
-<!-- SOBRE -->
-<section id="sobre">
-    <div class="container">
-        <div class="sobre-inner">
-            <div class="sobre-visual reveal">
-                <!-- Imagem do Bruno corrigida -->
-                <img src="assets/bruno.jpg.png" 
-                     alt="Bruno trabalhando na manutenção" loading="lazy">
-                <div class="sobre-badge">
-                    Liderança do Bruno
-                    <span>Compromisso com seu negócio</span>
-                </div>
-            </div>
-            <div class="sobre-text reveal reveal-delay-2">
-                <span class="section-label">Sobre nós</span>
-                <h2 class="section-title">Por que escolher a <span style="color:var(--red)">Embaixador</span>?</h2>
-                <p>Com a experiência e dedicação do <strong>Bruno</strong>, a Embaixador Auto Elétrica nasceu para suprir uma necessidade crucial do mercado: <strong>confiança e agilidade no atendimento corporativo</strong>.</p>
-                <p>Não apenas resolvemos o problema — atuamos como parceiros do seu negócio. Seja uma falha elétrica num trator em plena lavoura ou a manutenção preventiva da sua frota, entregamos serviço pesado com transparência total.</p>
-                <ul class="check-list">
-                    <li><i class="ph-fill ph-check-circle"></i> Atendimento focado em Pessoa Jurídica (PJ)</li>
-                    <li><i class="ph-fill ph-check-circle"></i> Especialização em maquinário pesado e agrícola</li>
-                    <li><i class="ph-fill ph-check-circle"></i> Diagnóstico computadorizado e peças com garantia</li>
-                    <li><i class="ph-fill ph-check-circle"></i> Emissão de nota fiscal e relatórios de serviço</li>
-                    <li><i class="ph-fill ph-check-circle"></i> Atendimento ágil para minimizar máquina parada</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- CONTATO -->
-<section id="contato">
-    <div class="container">
-        <div class="contato-header reveal">
-            <span class="section-label">Fale conosco</span>
-            <h2 class="section-title" style="color:#fff">Pronto para firmar uma <span style="color:var(--red)">parceria</span>?</h2>
-            <p class="section-sub">Entre em contato e descubra como cuidamos da parte elétrica da sua empresa.</p>
-        </div>
-
-        <div class="contato-grid">
-            <div class="contact-info reveal">
-                <div class="contact-card">
-                    <i class="ph ph-map-pin"></i>
-                    <div>
-                        <h4>Endereço</h4>
-                        <p>Av. das Indústrias, 123 — Centro<br>Sua Cidade — Estado, CEP 00000-000</p>
-                    </div>
-                </div>
-                <div class="contact-card">
-                    <i class="ph ph-whatsapp-logo"></i>
-                    <div>
-                        <h4>WhatsApp — Bruno</h4>
-                        <p>(15) 99852-4033</p>
-                        <a href="https://wa.me/5515998524033?text=Olá%20Bruno,%20vim%20pelo%20site%20e%20quero%20um%20orçamento!" target="_blank">Chamar agora →</a>
-                    </div>
-                </div>
-                <div class="contact-card">
-                    <i class="ph ph-envelope-simple"></i>
-                    <div>
-                        <h4>E-mail Corporativo</h4>
-                        <p>contato@embaixadorautoeletrica.com.br</p>
-                    </div>
-                </div>
-                <div class="contact-card">
-                    <i class="ph ph-clock"></i>
-                    <div>
-                        <h4>Horário de Atendimento</h4>
-                        <p>Seg–Sex: 07h às 18h<br>Sáb: 07h às 12h</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="contact-form reveal reveal-delay-2">
-                <h3>Solicite uma Proposta B2B</h3>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="f-nome">Nome / Empresa</label>
-                        <input type="text" id="f-nome" placeholder="Sua empresa">
-                    </div>
-                    <div class="form-group">
-                        <label for="f-tel">Telefone / WhatsApp</label>
-                        <input type="tel" id="f-tel" placeholder="(00) 00000-0000">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="f-tipo">Tipo de serviço</label>
-                    <select id="f-tipo">
-                        <option value="">Selecione...</option>
-                        <option>Manutenção em Tratores / Agrícola</option>
-                        <option>Frota de Caminhões</option>
-                        <option>Frota de Carros / Utilitários</option>
-                        <option>Contrato de Manutenção Preventiva</option>
-                        <option>Diagnóstico Computadorizado</option>
-                        <option>Outro</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="f-msg">Descreva sua necessidade</label>
-                    <textarea id="f-msg" placeholder="Ex: Manutenção na frota de 5 caminhões..."></textarea>
-                </div>
-                <button type="button" class="btn btn-submit" onclick="submitForm()">
-                    <i class="ph ph-paper-plane-tilt"></i> Enviar Mensagem
+        <!-- ENDEREÇO -->
+        <div class="bg-gray-50 rounded-2xl p-4 mb-4">
+            <p class="font-black text-gray-700 mb-2">🏠 Onde vai entregar?</p>
+            <input type="text" id="endereco-entrega" placeholder="Rua, número, bairro..."
+                class="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 font-bold focus:outline-none focus:border-green-400">
+            <div class="flex gap-2 mt-2">
+                <button onclick="setRetira()" id="btn-retira" class="flex-1 py-2 rounded-xl border-2 border-gray-200 font-bold text-sm text-gray-600 transition">
+                    🚶 Retirar
+                </button>
+                <button onclick="setEntrega()" id="btn-entrega" class="flex-1 py-2 rounded-xl border-2 border-green-500 bg-green-50 font-bold text-sm text-green-700 transition">
+                    🛵 Entrega
                 </button>
             </div>
         </div>
-    </div>
-</section>
 
-<!-- FOOTER -->
-<footer>
-    <div class="container">
-        <div class="footer-inner">
-            <div class="footer-brand">
-                <img src="assets/logo.jpg" alt="Logo Embaixador"
-                     onerror="this.style.display='none'">
-                <span>EMBAIXADOR AUTO ELÉTRICA</span>
+        <div class="flex justify-between mb-2">
+            <span class="font-bold text-gray-600">Total</span>
+            <span class="font-black text-red-600 text-xl" id="total-cart">R$ 0,00</span>
+        </div>
+        <p class="text-xs text-gray-400 mb-4">⭐ Você vai ganhar <span id="pontos-ganhar" class="font-black text-yellow-600">0 pontos</span> nesse pedido!</p>
+
+        <!-- PIX INFO -->
+        <div class="bg-blue-50 border-2 border-blue-200 rounded-2xl p-3 mb-4 text-sm">
+            <p class="font-black text-blue-800">💰 Chave Pix (CNPJ)</p>
+            <p class="font-bold text-blue-700 text-xs mt-1">56.124.903/0001-39</p>
+            <p class="text-blue-600 text-xs">Pagamento pode ser feito na entrega ou via Pix.</p>
+        </div>
+
+        <button onclick="finalizarPedido()" id="btn-finalizar" class="w-full bg-green-500 text-white font-black py-4 rounded-2xl text-lg flex items-center justify-center gap-2 shadow-lg">
+            <i class="fab fa-whatsapp text-xl"></i> Finalizar no WhatsApp
+        </button>
+    </div>
+</div>
+
+<!-- MODAL PONTOS -->
+<div class="pontos-modal" id="pontos-modal" onclick="fecharPontos(event)">
+    <div class="pontos-box">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="bangers text-2xl text-yellow-600">⭐ JP Fidelidade</h2>
+            <button onclick="fecharPontosBtn()" class="text-gray-400 text-xl">✕</button>
+        </div>
+        <div class="pontos-badge mb-4">
+            <span class="text-3xl">⭐</span>
+            <div>
+                <p class="font-black">Seus Pontos</p>
             </div>
-            <p class="footer-copy">&copy; 2026 Embaixador Auto Elétrica. Todos os direitos reservados.</p>
-            <div class="footer-social">
-                <a href="#" aria-label="Instagram"><i class="ph ph-instagram-logo"></i></a>
-                <a href="#" aria-label="Facebook"><i class="ph ph-facebook-logo"></i></a>
-                <a href="https://wa.me/5515998524033" target="_blank" aria-label="WhatsApp"><i class="ph ph-whatsapp-logo"></i></a>
+            <span class="bangers text-4xl ml-auto" id="pontos-modal-display">0</span>
+        </div>
+        <div id="recompensas-modal" class="space-y-2 max-h-60 overflow-y-auto"></div>
+    </div>
+</div>
+
+<script type="module">
+import { db } from './js/firebase-config.js';
+import {
+    collection, onSnapshot, query, orderBy, addDoc, serverTimestamp,
+    doc, getDoc, setDoc, updateDoc, increment
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// ─── ESTADO GLOBAL ────────────────────────────────────────────────────────────
+let todosItens = [];
+let carrinho = [];
+let categoriaAtiva = 'todos';
+let tipoEntrega = 'entrega';
+let clienteNome = localStorage.getItem('jpdog_nome') || '';
+let clienteId = localStorage.getItem('jpdog_id') || '';
+let meuPedidoId = localStorage.getItem('jpdog_pedido_id') || '';
+let lojaAberta = true;
+
+// Item pendente para o modal de adicionais
+let itemPendente = null;
+let adicionaisSelecionados = {};
+
+const ADICIONAIS = [
+    { id: 'hamburger_extra', nome: 'Hambúrguer Extra', preco: 5.00, emoji: '🍔' },
+    { id: 'bacon_extra',     nome: 'Bacon Extra',       preco: 4.00, emoji: '🥓' },
+    { id: 'calabresa_extra', nome: 'Calabresa Extra',   preco: 3.00, emoji: '🌶️' },
+    { id: 'cheddar_extra',   nome: 'Cheddar/Catupiry Extra', preco: 3.00, emoji: '🧀' },
+];
+
+const RECOMPENSAS = [
+    { id: 'tubaina', nome: 'Tubaina Grátis 🥤', pontos: 50, emoji: '🥤' },
+    { id: 'simples', nome: 'Hot Dog Simples 🌭', pontos: 100, emoji: '🌭' },
+    { id: 'especial', nome: 'Hot Dog Especial ⭐', pontos: 180, emoji: '⭐' },
+    { id: 'combo',   nome: 'Combo Dog + Bebida 🎉', pontos: 250, emoji: '🎉' },
+];
+
+// ─── INICIALIZAÇÃO ─────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+    if (clienteNome) {
+        document.getElementById('cliente-form').classList.add('hidden');
+        document.getElementById('pontos-banner').classList.remove('hidden');
+    }
+    if (!clienteId) {
+        clienteId = 'cli_' + Date.now() + Math.random().toString(36).slice(2);
+        localStorage.setItem('jpdog_id', clienteId);
+    }
+    carregarStatusLoja();
+    carregarCardapio();
+    carregarPontos();
+    renderRecompensas();
+    if (meuPedidoId) monitorarPedido(meuPedidoId);
+});
+
+// ─── STATUS DA LOJA ────────────────────────────────────────────────────────────
+function carregarStatusLoja() {
+    onSnapshot(doc(db, "config", "loja"), (snap) => {
+        lojaAberta = snap.exists() ? (snap.data().isStoreOpen !== false) : true;
+        const aviso = document.getElementById('aviso-fechada');
+        const btnFinalizar = document.getElementById('btn-finalizar');
+        if (lojaAberta) {
+            aviso.style.display = 'none';
+            if (btnFinalizar) {
+                btnFinalizar.disabled = false;
+                btnFinalizar.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            document.querySelectorAll('.btn-add').forEach(b => b.disabled = false);
+        } else {
+            aviso.style.display = 'block';
+            if (btnFinalizar) {
+                btnFinalizar.disabled = true;
+                btnFinalizar.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+            document.querySelectorAll('.btn-add').forEach(b => b.disabled = true);
+        }
+    });
+}
+
+// ─── CARREGAR CARDÁPIO ─────────────────────────────────────────────────────────
+function carregarCardapio() {
+    onSnapshot(query(collection(db, "cardapio"), orderBy("ordem", "asc")), (snap) => {
+        todosItens = [];
+        snap.forEach(d => todosItens.push({ id: d.id, ...d.data() }));
+        renderCardapio();
+    });
+}
+
+function renderCardapio() {
+    let itens = todosItens;
+    if (categoriaAtiva !== 'todos') itens = itens.filter(i => (i.categoria || 'hot-dog') === categoriaAtiva);
+    const busca = (document.getElementById('busca-lanche').value || '').toLowerCase();
+    if (busca) itens = itens.filter(i => i.nome.toLowerCase().includes(busca) || (i.descricao||'').toLowerCase().includes(busca));
+
+    const el = document.getElementById('container-lanches');
+    const empty = document.getElementById('empty-state');
+    if (!itens.length) { el.innerHTML = ''; empty.classList.remove('hidden'); return; }
+    empty.classList.add('hidden');
+    el.innerHTML = itens.map((l, idx) => `
+        <div class="item-card p-5 pl-8" style="animation-delay:${idx*60}ms">
+            <div class="flex items-start justify-between gap-3">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap mb-1">
+                        <span class="tag-categoria">${getCatLabel(l.categoria)}</span>
+                        ${l.destaque ? '<span class="tag-categoria" style="background:#FFF3E0;color:#D32F2F">🔥 Destaque</span>' : ''}
+                    </div>
+                    <h3 class="font-black text-gray-900 text-base uppercase">${l.nome}</h3>
+                    <p class="text-xs text-gray-400 mt-1 leading-relaxed">${l.descricao || ''}</p>
+                    <p class="text-xl font-black text-red-600 mt-2">R$ ${Number(l.preco).toFixed(2)}</p>
+                </div>
+                ${l.imagem ? `<img src="${l.imagem}" class="w-20 h-20 rounded-2xl object-cover flex-shrink-0">` : `<div class="w-20 h-20 bg-yellow-100 rounded-2xl flex items-center justify-center text-4xl flex-shrink-0">🌭</div>`}
+            </div>
+            <button class="btn-add absolute bottom-4 right-4" ${!lojaAberta ? 'disabled' : ''} onclick="window.abrirAdicionais('${l.nome.replace(/'/g,"\\'")}', ${l.preco}, '${l.id}')">
+                <i class="fas fa-plus"></i>
+            </button>
+        </div>
+    `).join('');
+}
+
+function getCatLabel(c) {
+    const m = { bebida:'🥤 Bebida', combo:'🎯 Combo', lanche:'🍔 Lanche' };
+    return m[c] || '🌭 Hot Dog';
+}
+
+// ─── FILTROS ───────────────────────────────────────────────────────────────────
+window.filtrarCategoria = (cat, btn) => {
+    categoriaAtiva = cat;
+    document.querySelectorAll('.cat-pill').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    renderCardapio();
+};
+window.filtrarBusca = () => renderCardapio();
+
+// ─── MODAL ACRÉSCIMOS ──────────────────────────────────────────────────────────
+window.abrirAdicionais = (nome, preco, id) => {
+    if (!lojaAberta) return showToast('🔴 Loja fechada no momento!');
+    itemPendente = { nome, preco: Number(preco), id };
+    adicionaisSelecionados = {};
+    ADICIONAIS.forEach(a => adicionaisSelecionados[a.id] = 0);
+
+    document.getElementById('adicionais-item-nome').textContent = `🌭 ${nome} — R$ ${Number(preco).toFixed(2)}`;
+    renderAdicionaisModal();
+    atualizarTotalAdicional();
+    document.getElementById('modal-adicionais').classList.add('open');
+};
+
+function renderAdicionaisModal() {
+    document.getElementById('lista-adicionais-modal').innerHTML = ADICIONAIS.map(a => `
+        <div class="adicional-item">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl">${a.emoji}</span>
+                <div>
+                    <p class="font-bold text-gray-800 text-sm">${a.nome}</p>
+                    <p class="text-red-600 font-black text-sm">+R$ ${a.preco.toFixed(2)}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button class="qty-btn qty-minus" onclick="alterarAdicional('${a.id}', -1)">−</button>
+                <span class="font-black text-gray-800 w-5 text-center" id="qty-${a.id}">0</span>
+                <button class="qty-btn qty-plus" onclick="alterarAdicional('${a.id}', 1)">+</button>
             </div>
         </div>
-    </div>
-</footer>
+    `).join('');
+}
 
-<!-- BOTÃO WHATSAPP FLUTUANTE -->
-<a href="https://wa.me/5515998524033?text=Olá,%20estou%20no%20site%20e%20preciso%20de%20ajuda!" target="_blank" class="wa-float" aria-label="Suporte WhatsApp">
-    <i class="ph ph-whatsapp-logo"></i>
-    <span class="wa-label">Suporte Rápido</span>
-</a>
+window.alterarAdicional = (id, delta) => {
+    adicionaisSelecionados[id] = Math.max(0, (adicionaisSelecionados[id] || 0) + delta);
+    document.getElementById(`qty-${id}`).textContent = adicionaisSelecionados[id];
+    atualizarTotalAdicional();
+};
 
-<!-- TOAST -->
-<div id="toast">✅ Mensagem enviada! O Bruno vai entrar em contato em breve.</div>
+function atualizarTotalAdicional() {
+    if (!itemPendente) return;
+    let extra = 0;
+    ADICIONAIS.forEach(a => { extra += (adicionaisSelecionados[a.id] || 0) * a.preco; });
+    const total = itemPendente.preco + extra;
+    document.getElementById('adicional-total-preview').textContent = `R$ ${total.toFixed(2)}`;
+}
 
-<script>
-    /* ── MENU MOBILE ── */
-    function toggleMenu() {
-        const menu = document.getElementById('mobile-menu');
-        const btn  = document.getElementById('hamburger');
-        const open = menu.classList.toggle('open');
-        btn.classList.toggle('open', open);
-        document.body.style.overflow = open ? 'hidden' : '';
-    }
-    function closeMenu() {
-        const menu = document.getElementById('mobile-menu');
-        const btn  = document.getElementById('hamburger');
-        menu.classList.remove('open');
-        btn.classList.remove('open');
-        document.body.style.overflow = '';
-    }
-
-    /* ── SCROLL REVEAL ── */
-    const revealObserver = new IntersectionObserver((entries) => {
-        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); revealObserver.unobserve(e.target); } });
-    }, { threshold: 0.12 });
-    document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
-
-    /* ── LIGHTBOX ── */
-    function openLightbox(item) {
-        const img = item.querySelector('img');
-        document.getElementById('lightbox-img').src = img.src;
-        document.getElementById('lightbox').classList.add('open');
-        document.body.style.overflow = 'hidden';
-    }
-    function closeLightbox() {
-        document.getElementById('lightbox').classList.remove('open');
-        document.body.style.overflow = '';
-    }
-    document.addEventListener('keydown', e => { if(e.key === 'Escape') closeLightbox(); });
-
-    /* ── FORMULÁRIO → WHATSAPP ── */
-    function submitForm() {
-        const nome  = document.getElementById('f-nome').value.trim();
-        const tel   = document.getElementById('f-tel').value.trim();
-        const tipo  = document.getElementById('f-tipo').value;
-        const msg   = document.getElementById('f-msg').value.trim();
-
-        if (!nome || !tel) {
-            alert('Preencha pelo menos o nome e o telefone.');
-            return;
+window.confirmarAdicionais = () => {
+    if (!itemPendente) return;
+    let extra = 0;
+    const adicionaisLista = [];
+    ADICIONAIS.forEach(a => {
+        const qt = adicionaisSelecionados[a.id] || 0;
+        if (qt > 0) {
+            extra += qt * a.preco;
+            adicionaisLista.push({ nome: a.nome, preco: a.preco, quantidade: qt });
         }
-        const texto = encodeURIComponent(
-            `Olá Bruno! Vim pelo site e gostaria de um orçamento.\n\n` +
-            `*Empresa/Nome:* ${nome}\n` +
-            `*Telefone:* ${tel}\n` +
-            `*Serviço:* ${tipo || 'Não especificado'}\n` +
-            `*Mensagem:* ${msg || 'Sem detalhes adicionais'}`
+    });
+    const precoFinal = itemPendente.preco + extra;
+    carrinho.push({ nome: itemPendente.nome, preco: precoFinal, id: itemPendente.id, adicionais: adicionaisLista });
+    atualizarBarrinha();
+    showToast(`✅ ${itemPendente.nome} adicionado!`);
+    fecharAdicionaisBtn();
+    itemPendente = null;
+};
+
+window.fecharAdicionais = (e) => { if (e.target === document.getElementById('modal-adicionais')) fecharAdicionaisBtn(); };
+window.fecharAdicionaisBtn = () => document.getElementById('modal-adicionais').classList.remove('open');
+
+// ─── CARRINHO ──────────────────────────────────────────────────────────────────
+function atualizarBarrinha() {
+    const total = carrinho.reduce((a, i) => a + i.preco, 0);
+    document.getElementById('total-bar').textContent = `R$ ${total.toFixed(2)}`;
+    document.getElementById('cart-count-badge').textContent = carrinho.length;
+    document.getElementById('total-cart').textContent = `R$ ${total.toFixed(2)}`;
+    document.getElementById('pontos-ganhar').textContent = Math.floor(total) + ' pontos';
+    const bar = document.getElementById('checkout-bar');
+    if (carrinho.length > 0) bar.classList.add('visible'); else bar.classList.remove('visible');
+}
+
+window.abrirCarrinho = () => {
+    renderCarrinho();
+    document.getElementById('cart-modal').classList.add('open');
+};
+window.fecharCarrinho = (e) => { if (e.target === document.getElementById('cart-modal')) fecharCarrinhoBtn(); };
+window.fecharCarrinhoBtn = () => document.getElementById('cart-modal').classList.remove('open');
+
+function renderCarrinho() {
+    const el = document.getElementById('lista-carrinho');
+    if (!carrinho.length) { el.innerHTML = '<p class="text-center text-gray-400 py-4">Carrinho vazio 😢</p>'; return; }
+    el.innerHTML = carrinho.map((i, idx) => {
+        const adicionaisStr = (i.adicionais && i.adicionais.length)
+            ? `<p class="text-xs text-gray-400">${i.adicionais.map(a => `+${a.quantidade}x ${a.nome}`).join(', ')}</p>` : '';
+        return `
+            <div class="flex items-start gap-3 bg-gray-50 rounded-xl p-3">
+                <span class="text-xl mt-0.5">🌭</span>
+                <div class="flex-1 min-w-0">
+                    <p class="font-bold text-sm text-gray-800">${i.nome}</p>
+                    ${adicionaisStr}
+                    <p class="text-red-600 font-black text-sm">R$ ${i.preco.toFixed(2)}</p>
+                </div>
+                <button onclick="window.removeCart(${idx})" class="text-red-400 hover:text-red-600 w-7 h-7 bg-red-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-trash text-xs"></i>
+                </button>
+            </div>`;
+    }).join('');
+}
+
+window.removeCart = (idx) => {
+    carrinho.splice(idx, 1);
+    renderCarrinho();
+    atualizarBarrinha();
+};
+
+window.setRetira = () => {
+    tipoEntrega = 'retirada';
+    document.getElementById('btn-retira').className = 'flex-1 py-2 rounded-xl border-2 border-yellow-500 bg-yellow-50 font-bold text-sm text-yellow-700 transition';
+    document.getElementById('btn-entrega').className = 'flex-1 py-2 rounded-xl border-2 border-gray-200 font-bold text-sm text-gray-600 transition';
+    document.getElementById('endereco-entrega').disabled = true;
+    document.getElementById('endereco-entrega').placeholder = 'Retirada no local';
+};
+window.setEntrega = () => {
+    tipoEntrega = 'entrega';
+    document.getElementById('btn-entrega').className = 'flex-1 py-2 rounded-xl border-2 border-green-500 bg-green-50 font-bold text-sm text-green-700 transition';
+    document.getElementById('btn-retira').className = 'flex-1 py-2 rounded-xl border-2 border-gray-200 font-bold text-sm text-gray-600 transition';
+    document.getElementById('endereco-entrega').disabled = false;
+    document.getElementById('endereco-entrega').placeholder = 'Rua, número, bairro...';
+};
+
+// ─── FINALIZAR PEDIDO ──────────────────────────────────────────────────────────
+window.finalizarPedido = async () => {
+    if (!lojaAberta) return showToast('🔴 Loja fechada no momento!');
+    if (!carrinho.length) return showToast('⚠️ Adicione itens ao carrinho!');
+    if (!clienteNome) { fecharCarrinhoBtn(); return showToast('⚠️ Informe seu nome primeiro!'); }
+    const endereco = document.getElementById('endereco-entrega').value;
+    if (tipoEntrega === 'entrega' && !endereco.trim()) return showToast('⚠️ Informe o endereço de entrega!');
+
+    const total = carrinho.reduce((a, i) => a + i.preco, 0);
+    const pontos = Math.floor(total);
+
+    try {
+        // Salvar pedido no Firestore
+        const pedidoRef = await addDoc(collection(db, "pedidos"), {
+            clienteNome,
+            clienteId,
+            itens: carrinho,
+            total,
+            pontos,
+            endereco: tipoEntrega === 'retirada' ? 'RETIRADA NO LOCAL' : endereco,
+            tipoEntrega,
+            status: 'aguardando',
+            timestamp: serverTimestamp()
+        });
+        meuPedidoId = pedidoRef.id;
+        localStorage.setItem('jpdog_pedido_id', meuPedidoId);
+
+        // Adicionar pontos
+        await adicionarPontos(pontos, total);
+
+        // Montar mensagem WhatsApp
+        const itensMsg = carrinho.map(i => {
+            let linha = `• ${i.nome} — R$ ${i.preco.toFixed(2)}`;
+            if (i.adicionais && i.adicionais.length) {
+                linha += `\n  Acréscimos: ${i.adicionais.map(a => `${a.quantidade}x ${a.nome}`).join(', ')}`;
+            }
+            return linha;
+        }).join('\n');
+
+        const msg = encodeURIComponent(
+            `🌭 *NOVO PEDIDO JP DOG'S*\n\n` +
+            `👤 *Cliente:* ${clienteNome}\n` +
+            `📦 *Pedido ID:* #${meuPedidoId.slice(-6).toUpperCase()}\n\n` +
+            `*Itens:*\n${itensMsg}\n\n` +
+            `💰 *Total: R$ ${total.toFixed(2)}*\n` +
+            `🏠 *Entrega:* ${tipoEntrega === 'retirada' ? 'Retirada no local' : endereco}\n\n` +
+            `💳 *Chave Pix (CNPJ):* 56.124.903/0001-39\n\n` +
+            `_Enviado pelo site jp-dogs.com_`
         );
-        window.open(`https://wa.me/5515998524033?text=${texto}`, '_blank');
+        window.open(`https://wa.me/5515996044324?text=${msg}`, '_blank');
 
-        const toast = document.getElementById('toast');
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 4000);
+        carrinho = [];
+        atualizarBarrinha();
+        fecharCarrinhoBtn();
+        monitorarPedido(meuPedidoId);
+        showTab('pedidos', null);
+        showToast(`🎉 Pedido enviado! +${pontos} pontos!`);
+    } catch(e) {
+        console.error(e);
+        showToast('❌ Erro ao enviar pedido. Tente novamente.');
     }
+};
 
-    /* ── HEADER SHADOW ON SCROLL ── */
-    window.addEventListener('scroll', () => {
-        document.querySelector('header').style.boxShadow =
-            window.scrollY > 20 ? '0 4px 24px rgba(0,0,0,.4)' : 'none';
-    }, { passive: true });
+// ─── STATUS DO PEDIDO ──────────────────────────────────────────────────────────
+const STATUS_CONFIG = [
+    { key: 'aguardando', label: 'Pedido Recebido', emoji: '📥', desc: 'Seu pedido chegou!' },
+    { key: 'preparando', label: 'Preparando', emoji: '👨‍🍳', desc: 'Na cozinha agora!' },
+    { key: 'a-caminho', label: 'A Caminho', emoji: '🛵', desc: 'Saiu pra entrega!' },
+    { key: 'entregue', label: 'Entregue', emoji: '✅', desc: 'Bom apetite!' },
+];
+
+function monitorarPedido(id) {
+    onSnapshot(doc(db, "pedidos", id), (snap) => {
+        if (!snap.exists()) return;
+        renderStatusPedido(snap.data());
+        document.getElementById('sem-pedido').classList.add('hidden');
+        document.getElementById('status-pedido').classList.remove('hidden');
+    });
+}
+
+function renderStatusPedido(pedido) {
+    const statusAtualIdx = STATUS_CONFIG.findIndex(s => s.key === pedido.status);
+    document.getElementById('status-timeline').innerHTML = STATUS_CONFIG.map((s, idx) => {
+        const done = idx < statusAtualIdx;
+        const active = idx === statusAtualIdx;
+        return `
+            ${idx > 0 ? `<div class="status-line ${done ? 'done' : ''}"></div>` : ''}
+            <div class="status-step">
+                <div class="status-dot ${done ? 'done' : active ? 'active' : 'pending'}">
+                    ${done ? '<i class="fas fa-check text-xs"></i>' : s.emoji}
+                </div>
+                <div>
+                    <p class="font-black text-sm ${active ? 'text-gray-900' : done ? 'text-green-600' : 'text-gray-400'}">${s.label}</p>
+                    ${active ? `<p class="text-xs text-gray-500">${s.desc}</p>` : ''}
+                </div>
+            </div>`;
+    }).join('');
+
+    const itens = pedido.itens || [];
+    document.getElementById('resumo-pedido').innerHTML = `
+        <p class="font-black text-gray-700 mb-3">📋 Resumo</p>
+        ${itens.map(i => `
+            <div class="flex justify-between text-sm py-1">
+                <span class="text-gray-700">🌭 ${i.nome}</span>
+                <span class="font-bold text-red-600">R$ ${Number(i.preco).toFixed(2)}</span>
+            </div>
+        `).join('')}
+        <div class="border-t-2 border-gray-100 mt-3 pt-3 flex justify-between">
+            <span class="font-black text-gray-800">Total</span>
+            <span class="font-black text-red-600 text-lg">R$ ${Number(pedido.total).toFixed(2)}</span>
+        </div>
+        <p class="text-xs text-green-600 font-bold mt-1">+${pedido.pontos || 0} pontos ganhos!</p>
+    `;
+}
+
+// ─── PONTOS ────────────────────────────────────────────────────────────────────
+async function carregarPontos() {
+    if (!clienteId) return;
+    onSnapshot(doc(db, "clientes", clienteId), (snap) => {
+        const data = snap.exists() ? snap.data() : {};
+        const pts = data.pontos || 0;
+        document.getElementById('pontos-display').textContent = pts + ' pts';
+        document.getElementById('pontos-display2').textContent = pts;
+        document.getElementById('pontos-modal-display').textContent = pts;
+
+        const hist = data.historico || [];
+        const histEl = document.getElementById('historico-pontos');
+        if (hist.length) {
+            histEl.innerHTML = hist.slice(-5).reverse().map(h => `
+                <div class="flex justify-between py-1 border-b border-gray-50">
+                    <span class="text-gray-600">${h.desc}</span>
+                    <span class="font-bold text-yellow-600">+${h.pts} pts</span>
+                </div>`).join('');
+        }
+        renderRecompensas(pts);
+    });
+}
+
+async function adicionarPontos(pts, total) {
+    const ref = doc(db, "clientes", clienteId);
+    const snap = await getDoc(ref);
+    const hist = snap.exists() ? (snap.data().historico || []) : [];
+    hist.push({ desc: `Pedido R$ ${total.toFixed(2)}`, pts, data: new Date().toLocaleDateString('pt-BR') });
+    if (snap.exists()) {
+        await updateDoc(ref, { pontos: increment(pts), historico: hist, nome: clienteNome });
+    } else {
+        await setDoc(ref, { pontos: pts, historico: hist, nome: clienteNome, clienteId });
+    }
+}
+
+function renderRecompensas(pontos = 0) {
+    const html = RECOMPENSAS.map(r => {
+        const ok = pontos >= r.pontos;
+        return `
+            <div class="recompensa-card ${ok ? 'desbloqueado' : ''}">
+                <span class="text-3xl">${r.emoji}</span>
+                <div class="flex-1">
+                    <p class="font-black text-gray-800 text-sm">${r.nome}</p>
+                    <p class="text-xs text-gray-500">${r.pontos} pontos</p>
+                </div>
+                ${ok ? `<button onclick="window.resgatar('${r.id}','${r.nome}',${r.pontos})" class="bg-green-500 text-white px-3 py-1.5 rounded-xl text-xs font-black">Resgatar!</button>`
+                      : `<div class="text-xs font-bold text-gray-400">Faltam ${r.pontos - pontos} pts</div>`}
+            </div>`;
+    }).join('');
+    const el1 = document.getElementById('lista-recompensas');
+    const el2 = document.getElementById('recompensas-modal');
+    if (el1) el1.innerHTML = html;
+    if (el2) el2.innerHTML = html;
+}
+
+window.resgatar = async (id, nome, pts) => {
+    const ref = doc(db, "clientes", clienteId);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return;
+    const atual = snap.data().pontos || 0;
+    if (atual < pts) return showToast('⚠️ Pontos insuficientes!');
+
+    const hist = snap.data().historico || [];
+    hist.push({ desc: `Resgatou: ${nome}`, pts: -pts, data: new Date().toLocaleDateString('pt-BR') });
+    await updateDoc(ref, { pontos: increment(-pts), historico: hist });
+
+    const msg = encodeURIComponent(`🎁 *RESGATE JP DOG'S*\n\nOlá! Sou ${clienteNome} e gostaria de resgatar:\n*${nome}* (${pts} pontos)\n\nID: ${clienteId.slice(-8)}`);
+    window.open(`https://wa.me/5515996044324?text=${msg}`, '_blank');
+    showToast(`🎉 Resgatando: ${nome}!`);
+};
+
+// ─── CLIENTE ───────────────────────────────────────────────────────────────────
+window.salvarCliente = () => {
+    const val = document.getElementById('cliente-nome').value.trim();
+    if (!val) return showToast('⚠️ Digite seu nome!');
+    clienteNome = val;
+    localStorage.setItem('jpdog_nome', clienteNome);
+    document.getElementById('cliente-form').classList.add('hidden');
+    document.getElementById('pontos-banner').classList.remove('hidden');
+    showToast(`👋 Bem-vindo, ${clienteNome}!`);
+};
+
+// ─── MODAIS ────────────────────────────────────────────────────────────────────
+window.abrirPontos = () => document.getElementById('pontos-modal').classList.add('open');
+window.fecharPontos = (e) => { if (e.target === document.getElementById('pontos-modal')) fecharPontosBtn(); };
+window.fecharPontosBtn = () => document.getElementById('pontos-modal').classList.remove('open');
+
+// ─── TABS ──────────────────────────────────────────────────────────────────────
+window.showTab = (tab, btn) => {
+    document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
+    document.getElementById(`tab-${tab}`).classList.remove('hidden');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    else {
+        const btns = document.querySelectorAll('.tab-btn');
+        const map = { cardapio: 0, pedidos: 1, pontos: 2, local: 3 };
+        btns[map[tab]]?.classList.add('active');
+    }
+};
+
+// ─── TOAST ─────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+}
+window.showToast = showToast;
 </script>
 </body>
 </html>
